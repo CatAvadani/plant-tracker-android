@@ -1,5 +1,6 @@
 package com.catalina.planttracker.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,9 +34,11 @@ fun SummaryCard(label: String, value: String, modifier: Modifier = Modifier, con
 }
 
 @Composable
-fun PlantCard(plant: Plant, modifier: Modifier = Modifier) {
+fun PlantCard(plant: Plant, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

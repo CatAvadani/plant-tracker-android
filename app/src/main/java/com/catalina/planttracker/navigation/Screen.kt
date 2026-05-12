@@ -18,6 +18,10 @@ sealed class Screen(val route: String, val title: String = "", val icon: ImageVe
     object Plants : Screen("plants", "Plants", Icons.Default.LocalFlorist)
     object Calendar : Screen("calendar", "Calendar", Icons.Default.CalendarMonth)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+
+    // Secondary Screens
+    object PlantDetails : Screen("plant_details/{plantName}", "Plant Details")
+    object AddPlant : Screen("add_plant", "Add Plant")
 }
 
 val bottomNavItems = listOf(

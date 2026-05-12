@@ -5,16 +5,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.catalina.planttracker.ui.components.BottomNavigationBar
 import com.catalina.planttracker.ui.screens.auth.LoginScreen
 import com.catalina.planttracker.ui.screens.auth.RegisterScreen
 import com.catalina.planttracker.ui.screens.auth.SplashScreen
 import com.catalina.planttracker.ui.screens.calendar.CalendarScreen
 import com.catalina.planttracker.ui.screens.home.HomeScreen
+import com.catalina.planttracker.ui.screens.plants.AddPlantScreen
+import com.catalina.planttracker.ui.screens.plants.PlantDetailsScreen
 import com.catalina.planttracker.ui.screens.plants.PlantsScreen
 import com.catalina.planttracker.ui.screens.settings.SettingsScreen
 
@@ -77,8 +81,18 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
             }
 
             // Main App Graph
-            composable(Screen.Home.route) { HomeScreen() }
-            composable(Screen.Plants.route) { PlantsScreen() }
+            composable(Screen.Home.route) { 
+                HomeScreen(
+                    onPlantClick = { name -> navController.navigate("plant_details/$name") },
+                    onAddPlantClick = { navController.navigate(Screen.AddPlant.route) }
+                ) 
+            }
+            composable(Screen.Plants.route) { 
+                PlantsScreen(
+                    onPlantClick = { name -> navController.navigate("plant_details/$name") },
+                    onAddPlantClick = { navController.navigate(Screen.AddPlant.route) }
+                ) 
+            }
             composable(Screen.Calendar.route) { CalendarScreen() }
             composable(Screen.Settings.route) {
                 SettingsScreen(onLogout = {
@@ -86,6 +100,19 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 })
+            }
+
+            // Secondary Screens
+            composable(
+                route = Screen.PlantDetails.route,
+                arguments = listOf(navArgument("plantName") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val plantName = backStackEntry.arguments?.getString("plantName")
+                PlantDetailsScreen(plantName = plantName, onBack = { navController.popBackStack() })
+            }
+
+            composable(Screen.AddPlant.route) {
+                AddPlantScreen(onBack = { navController.popBackStack() })
             }
         }
     }
