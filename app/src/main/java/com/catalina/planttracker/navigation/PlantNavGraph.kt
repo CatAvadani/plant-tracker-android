@@ -70,9 +70,7 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
             composable(Screen.Register.route) {
                 RegisterScreen(
                     onRegisterSuccess = {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Register.route) { inclusive = true }
-                        }
+                        navController.popBackStack(Screen.Login.route, inclusive = false)
                     },
                     onNavigateToLogin = {
                         navController.navigate(Screen.Login.route)

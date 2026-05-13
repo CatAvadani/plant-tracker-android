@@ -71,6 +71,6 @@ class AuthRepository(
     }
 
     fun isLoggedIn(): Boolean {
-        return tokenManager.getToken() != null
+        return tokenManager.getToken() != null && tokenManager.getApiKey() != null
     }
 }

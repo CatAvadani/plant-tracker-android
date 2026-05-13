@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.catalina.planttracker.data.local.TokenManager
+import com.catalina.planttracker.navigation.Screen
 import kotlinx.coroutines.delay
 
 @Composable
@@ -24,10 +25,10 @@ fun SplashScreen(onNavigate: (String) -> Unit) {
 
     LaunchedEffect(Unit) {
         delay(1000)
-        if (tokenManager.getToken() != null) {
-            onNavigate("home")
+        if (tokenManager.getToken() != null && tokenManager.getApiKey() != null) {
+            onNavigate(Screen.Home.route)
         } else {
-            onNavigate("login")
+            onNavigate(Screen.Login.route)
         }
     }
 
