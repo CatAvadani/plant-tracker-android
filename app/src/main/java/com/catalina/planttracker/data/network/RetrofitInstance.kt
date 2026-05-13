@@ -47,4 +47,8 @@ object RetrofitInstance {
     fun <T> createService(context: Context, serviceClass: Class<T>): T {
         return getRetrofit(context).create(serviceClass)
     }
+
+    fun getAuthService(context: Context): AuthApiService {
+        return createService(context, AuthApiService::class.java)
+    }
 }
