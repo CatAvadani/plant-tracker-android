@@ -4,8 +4,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.catalina.planttracker.data.network.model.LoginRequest
-import com.catalina.planttracker.data.network.model.RegisterRequest
+import com.catalina.planttracker.data.model.LoginRequest
+import com.catalina.planttracker.data.model.RegisterRequest
 import com.catalina.planttracker.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 

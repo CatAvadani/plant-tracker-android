@@ -61,9 +61,9 @@ app/src/main/java/com/catalina/planttracker/
 ├── data/
 │   ├── local/
 │   │   └── TokenManager.kt
+│   ├── model/
+│   │   └── AuthModels.kt
 │   ├── network/
-│   │   ├── model/
-│   │   │   └── AuthModels.kt
 │   │   ├── ApiConfig.kt
 │   │   ├── AuthApiService.kt
 │   │   ├── AuthInterceptor.kt

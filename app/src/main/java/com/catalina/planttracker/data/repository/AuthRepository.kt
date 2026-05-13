@@ -2,16 +2,16 @@ package com.catalina.planttracker.data.repository
 
 import com.catalina.planttracker.data.local.TokenManager
 import com.catalina.planttracker.data.network.AuthApiService
-import com.catalina.planttracker.data.network.model.AuthResponse
-import com.catalina.planttracker.data.network.model.LoginRequest
-import com.catalina.planttracker.data.network.model.RegisterRequest
+import com.catalina.planttracker.data.model.LoginResponse
+import com.catalina.planttracker.data.model.LoginRequest
+import com.catalina.planttracker.data.model.RegisterRequest
 import retrofit2.Response
 
 class AuthRepository(
     private val apiService: AuthApiService,
     private val tokenManager: TokenManager
 ) {
-    suspend fun login(request: LoginRequest): Result<AuthResponse> {
+    suspend fun login(request: LoginRequest): Result<LoginResponse> {
         return try {
             val response = apiService.login(request)
             if (response.isSuccessful) {
