@@ -13,7 +13,8 @@ data class LoginResponse(
 data class RegisterRequest(
     val email: String,
     val password: String,
-    val confirmPassword: String
+    val confirmPassword: String,
+    val displayName: String
 )
 
 data class RegisterResponse(

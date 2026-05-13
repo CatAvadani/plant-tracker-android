@@ -37,9 +37,9 @@ class AuthRepository(
         }
     }
 
-    suspend fun register(email: String, password: String): String? {
+    suspend fun register(email: String, password: String, displayName: String): String? {
         return try {
-            val response = api.register(RegisterRequest(email, password, password)) // Using password as confirmPassword for now
+            val response = api.register(RegisterRequest(email, password, password, displayName)) // Using password as confirmPassword for now
             if (response.isSuccessful) {
                 null // Success
             } else {

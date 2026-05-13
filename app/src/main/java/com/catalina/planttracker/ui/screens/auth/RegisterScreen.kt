@@ -90,7 +90,7 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.register(email, password) },
+            onClick = { viewModel.register(email, password, name) },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
             enabled = authState !is AuthState.Loading
