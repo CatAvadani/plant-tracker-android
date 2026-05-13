@@ -18,14 +18,28 @@ class AuthRepository(
                 if (body != null) {
                     tokenManager.saveToken(body.token)
                     
+                    // Save user info if available
+                    body.user?.let { user ->
+                        tokenManager.saveUser(user.email, user.displayName)
+                    }
+                    
+                    // Clear existing API key before generating a new one
+                    // to ensure no old/invalid key is sent in the header
+                    tokenManager.saveApiKey("") 
+
                     // Generate and save API Key
                     val apiKeyResponse = api.generateApiKey()
                     if (apiKeyResponse.isSuccessful) {
-                        apiKeyResponse.body()?.let {
-                            tokenManager.saveApiKey(it.apiKey)
+                        val apiKeyBody = apiKeyResponse.body()
+                        if (apiKeyBody != null) {
+                            tokenManager.saveApiKey(apiKeyBody.apiKey)
+                            null // Success
+                        } else {
+                            "API Key generation failed: Empty response"
                         }
+                    } else {
+                        "API Key generation failed: ${apiKeyResponse.code()}"
                     }
-                    null // Success
                 } else {
                     "Login failed: Empty response"
                 }
@@ -33,20 +47,22 @@ class AuthRepository(
                 "Login failed: ${loginResponse.code()}"
             }
         } catch (e: Exception) {
-            e.message ?: "An unknown error occurred"
+            e.printStackTrace()
+            "Connection error: ${e.localizedMessage ?: "Unknown error"}"
         }
     }
 
-    suspend fun register(email: String, password: String, displayName: String): String? {
+    suspend fun register(email: String, password: String, confirmPassword: String, displayName: String): String? {
         return try {
-            val response = api.register(RegisterRequest(email, password, password, displayName)) // Using password as confirmPassword for now
+            val response = api.register(RegisterRequest(email, password, confirmPassword, displayName))
             if (response.isSuccessful) {
                 null // Success
             } else {
                 "Registration failed: ${response.code()}"
             }
         } catch (e: Exception) {
-            e.message ?: "An unknown error occurred"
+            e.printStackTrace()
+            "Registration error: ${e.localizedMessage ?: "Unknown error"}"
         }
     }
 

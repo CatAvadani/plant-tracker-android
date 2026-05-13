@@ -36,10 +36,10 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun register(email: String, password: String, displayName: String) {
+    fun register(email: String, password: String, confirmPassword: String, displayName: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val result = repository.register(email, password, displayName)
+            val result = repository.register(email, password, confirmPassword, displayName)
             if (result == null) {
                 _authState.value = AuthState.Success
             } else {
@@ -57,7 +57,7 @@ class AuthViewModelFactory(private val context: Context) : ViewModelProvider.Fac
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             val tokenManager = TokenManager(context)
-            val apiService = RetrofitInstance.getAuthApi(context)
+            val apiService = RetrofitInstance.getAuthService(context)
             val repository = AuthRepository(apiService, tokenManager)
             @Suppress("UNCHECKED_CAST")
             return AuthViewModel(repository) as T

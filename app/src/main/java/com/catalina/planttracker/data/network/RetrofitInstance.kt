@@ -12,10 +12,6 @@ object RetrofitInstance {
 
     private var retrofit: Retrofit? = null
 
-    fun getAuthApi(context: Context): AuthApiService {
-        return getRetrofit(context).create(AuthApiService::class.java)
-    }
-
     fun getRetrofit(context: Context): Retrofit {
         return retrofit ?: synchronized(this) {
             val instance = Retrofit.Builder()

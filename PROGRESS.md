@@ -50,7 +50,7 @@ A modern, calm plant care application built with Jetpack Compose and Material 3.
 - Created **RetrofitInstance** singleton with logging and timeout configurations.
 - Implemented **TokenManager** using **EncryptedSharedPreferences** for secure storage of sensitive data.
 - Created **AuthApiService** and **AuthModels** for login, register, and API key generation.
-- Implemented **AuthRepository** and **AuthViewModel** to handle authentication logic.
+- Implemented **AuthRepository** and **AuthViewModel** to handle authentication logic and user info storage.
 - Connected **LoginScreen** and **RegisterScreen** to real API calls with state management (Idle, Loading, Success, Error).
 - Added **Coil** for efficient asynchronous image loading from URLs.
 - Added **Coroutines** for background task management.
@@ -65,11 +65,11 @@ app/src/main/java/com/catalina/planttracker/
 │   │   └── TokenManager.kt
 │   ├── model/
 │   │   └── AuthModels.kt
-│   ├── network/
-│   │   ├── ApiConfig.kt
-│   │   ├── AuthApiService.kt
-│   │   ├── AuthInterceptor.kt
-│   │   └── RetrofitInstance.kt
+│   └── network/
+│       ├── ApiConfig.kt
+│       ├── AuthApiService.kt
+│       ├── AuthInterceptor.kt
+│       └── RetrofitInstance.kt
 ├── model/
 │   └── Plant.kt            # Data class and fakePlants list
 ├── navigation/

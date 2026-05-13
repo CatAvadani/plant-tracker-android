@@ -29,6 +29,7 @@ fun RegisterScreen(
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
@@ -77,6 +78,15 @@ fun RegisterScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            label = { Text("Confirm Password") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         if (authState is AuthState.Error) {
@@ -90,10 +100,14 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.register(email, password, name) },
+            onClick = { 
+                if (password == confirmPassword) {
+                    viewModel.register(email, password, confirmPassword, name) 
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-            enabled = authState !is AuthState.Loading
+            enabled = authState !is AuthState.Loading && password.isNotEmpty() && password == confirmPassword
         ) {
             if (authState is AuthState.Loading) {
                 CircularProgressIndicator(

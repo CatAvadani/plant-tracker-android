@@ -35,7 +35,10 @@ class TokenManager(context: Context) {
         sharedPreferences.edit().putString(KEY_API_KEY, apiKey).apply()
     }
 
-    fun getApiKey(): String? = sharedPreferences.getString(KEY_API_KEY, null)
+    fun getApiKey(): String? {
+        val key = sharedPreferences.getString(KEY_API_KEY, null)
+        return if (key.isNullOrEmpty()) null else key
+    }
 
     fun saveUser(email: String, name: String) {
         sharedPreferences.edit().apply {

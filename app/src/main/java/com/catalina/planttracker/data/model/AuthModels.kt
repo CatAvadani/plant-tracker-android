@@ -7,7 +7,14 @@ data class LoginRequest(
 
 data class LoginResponse(
     val token: String,
-    val expiresAt: String
+    val expiresAt: String,
+    val user: UserResponse? = null
+)
+
+data class UserResponse(
+    val id: String,
+    val email: String,
+    val displayName: String
 )
 
 data class RegisterRequest(

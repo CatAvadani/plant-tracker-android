@@ -6,16 +6,21 @@ import okhttp3.Response
 
 class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val requestBuilder = chain.request().newBuilder()
+        val request = chain.request()
+        val path = request.url.encodedPath
+        val requestBuilder = request.newBuilder()
 
-        // Add JWT Token
-        tokenManager.getToken()?.let { token ->
-            requestBuilder.addHeader("Authorization", "Bearer $token")
-        }
+        // Don't add auth headers to login or register endpoints
+        if (!path.contains("api/auth/login") && !path.contains("api/auth/register")) {
+            // Add JWT Token
+            tokenManager.getToken()?.let { token ->
+                requestBuilder.addHeader("Authorization", "Bearer $token")
+            }
 
-        // Add API Key
-        tokenManager.getApiKey()?.let { apiKey ->
-            requestBuilder.addHeader("X-Api-Key", apiKey)
+            // Add API Key
+            tokenManager.getApiKey()?.let { apiKey ->
+                requestBuilder.addHeader("X-Api-Key", apiKey)
+            }
         }
 
         return chain.proceed(requestBuilder.build())
