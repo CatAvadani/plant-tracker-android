@@ -59,6 +59,8 @@ A modern, calm plant care application built with Jetpack Compose and Material 3.
 ```text
 app/src/main/java/com/catalina/planttracker/
 ├── data/
+│   ├── auth/
+│   │   └── AuthRepository.kt
 │   ├── local/
 │   │   └── TokenManager.kt
 │   ├── model/
@@ -68,8 +70,6 @@ app/src/main/java/com/catalina/planttracker/
 │   │   ├── AuthApiService.kt
 │   │   ├── AuthInterceptor.kt
 │   │   └── RetrofitInstance.kt
-│   └── repository/
-│       └── AuthRepository.kt
 ├── model/
 │   └── Plant.kt            # Data class and fakePlants list
 ├── navigation/
@@ -84,10 +84,12 @@ app/src/main/java/com/catalina/planttracker/
 │       ├── auth/
 │       │   ├── SplashScreen.kt
 │       │   ├── LoginScreen.kt
-│       │   ├── RegisterScreen.kt
-│       │   ├── AuthViewModel.kt
-│       │   └── AuthViewModelFactory.kt
+│       │   └── RegisterScreen.kt
 │       ├── home/
+...
+├── ui/
+│   ├── auth/
+│   │   └── AuthViewModel.kt
 │       │   └── HomeScreen.kt
 │       ├── plants/
 │       │   ├── PlantsScreen.kt

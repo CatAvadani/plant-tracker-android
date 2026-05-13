@@ -13,18 +13,25 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.catalina.planttracker.data.auth.AuthRepository
+import com.catalina.planttracker.data.local.TokenManager
+import com.catalina.planttracker.ui.auth.AuthState
+import com.catalina.planttracker.ui.auth.AuthViewModel
+import com.catalina.planttracker.ui.auth.AuthViewModelFactory
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit,
-    viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(LocalContext.current))
+    viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(AuthRepository(TokenManager(LocalContext.current)))
+    )
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val authState by viewModel.authState
+    val authState by viewModel.authState.collectAsState()
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
@@ -84,7 +91,7 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.register(email, password, password) }, // Confirm password same as password for now
+            onClick = { viewModel.register(email, password) },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
             enabled = authState !is AuthState.Loading

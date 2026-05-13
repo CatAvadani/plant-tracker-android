@@ -12,6 +12,10 @@ object RetrofitInstance {
 
     private var retrofit: Retrofit? = null
 
+    val authApi: AuthApiService by lazy {
+        retrofit!!.create(AuthApiService::class.java)
+    }
+
     fun getRetrofit(context: Context): Retrofit {
         return retrofit ?: synchronized(this) {
             val instance = Retrofit.Builder()
