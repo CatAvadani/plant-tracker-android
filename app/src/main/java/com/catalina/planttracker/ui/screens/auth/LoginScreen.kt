@@ -12,9 +12,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.catalina.planttracker.data.auth.AuthRepository
-import com.catalina.planttracker.data.local.TokenManager
 import com.catalina.planttracker.ui.auth.AuthState
 import com.catalina.planttracker.ui.auth.AuthViewModel
 import com.catalina.planttracker.ui.auth.AuthViewModelFactory
@@ -22,15 +21,15 @@ import com.catalina.planttracker.ui.auth.AuthViewModelFactory
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit,
-    viewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(AuthRepository(TokenManager(LocalContext.current)))
-    )
+    onNavigateToRegister: () -> Unit
 ) {
+    val context = LocalContext.current
+    val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val authState by viewModel.authState.collectAsState()
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {

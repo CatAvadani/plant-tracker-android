@@ -12,8 +12,8 @@ object RetrofitInstance {
 
     private var retrofit: Retrofit? = null
 
-    val authApi: AuthApiService by lazy {
-        retrofit!!.create(AuthApiService::class.java)
+    fun getAuthApi(context: Context): AuthApiService {
+        return getRetrofit(context).create(AuthApiService::class.java)
     }
 
     fun getRetrofit(context: Context): Retrofit {

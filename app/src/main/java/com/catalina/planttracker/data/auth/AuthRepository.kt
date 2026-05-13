@@ -3,11 +3,12 @@ package com.catalina.planttracker.data.auth
 import com.catalina.planttracker.data.local.TokenManager
 import com.catalina.planttracker.data.model.LoginRequest
 import com.catalina.planttracker.data.model.RegisterRequest
-import com.catalina.planttracker.data.network.RetrofitInstance
+import com.catalina.planttracker.data.network.AuthApiService
 
-class AuthRepository(private val tokenManager: TokenManager) {
-
-    private val api = RetrofitInstance.authApi
+class AuthRepository(
+    private val api: AuthApiService,
+    private val tokenManager: TokenManager
+) {
 
     suspend fun login(email: String, password: String): String? {
         return try {

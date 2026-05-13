@@ -26,8 +26,8 @@ A modern, calm plant care application built with Jetpack Compose and Material 3.
 
 ### 2. Navigation Flow
 - Implemented a complete navigation lifecycle:
-  - **Splash Screen**: 2-second delay with app branding.
-  - **Authentication**: Login and Register screens with form fields.
+  - **Splash Screen**: 1-second delay with session check (auto-login if token exists).
+  - **Authentication**: Login and Register screens with real API integration and state management.
   - **Main App**: Home, Plants, Calendar, and Settings accessible via a Persistent Bottom Navigation Bar.
   - **Secondary Navigation**: Deep linking to Plant Details and Add Plant forms.
 
@@ -76,6 +76,8 @@ app/src/main/java/com/catalina/planttracker/
 │   ├── Screen.kt           # Route definitions
 │   └── PlantNavGraph.kt    # Navigation Host setup
 ├── ui/
+│   ├── auth/
+│   │   └── AuthViewModel.kt
 │   ├── components/
 │   │   ├── BottomNavigationBar.kt
 │   │   ├── PlantComponents.kt
@@ -86,10 +88,6 @@ app/src/main/java/com/catalina/planttracker/
 │       │   ├── LoginScreen.kt
 │       │   └── RegisterScreen.kt
 │       ├── home/
-...
-├── ui/
-│   ├── auth/
-│   │   └── AuthViewModel.kt
 │       │   └── HomeScreen.kt
 │       ├── plants/
 │       │   ├── PlantsScreen.kt

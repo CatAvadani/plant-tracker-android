@@ -1,9 +1,12 @@
 package com.catalina.planttracker.ui.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.catalina.planttracker.data.auth.AuthRepository
+import com.catalina.planttracker.data.local.TokenManager
+import com.catalina.planttracker.data.network.RetrofitInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,9 +53,12 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 }
 
-class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelProvider.Factory {
+class AuthViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+            val tokenManager = TokenManager(context)
+            val apiService = RetrofitInstance.getAuthApi(context)
+            val repository = AuthRepository(apiService, tokenManager)
             @Suppress("UNCHECKED_CAST")
             return AuthViewModel(repository) as T
         }

@@ -7,19 +7,28 @@ import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.catalina.planttracker.data.local.TokenManager
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(onTimeout: () -> Unit) {
+fun SplashScreen(onNavigate: (String) -> Unit) {
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+
     LaunchedEffect(Unit) {
-        delay(2000)
-        onTimeout()
+        delay(1000)
+        if (tokenManager.getToken() != null) {
+            onNavigate("home")
+        } else {
+            onNavigate("login")
+        }
     }
 
     Box(
