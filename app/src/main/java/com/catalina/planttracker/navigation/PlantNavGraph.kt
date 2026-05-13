@@ -49,8 +49,8 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
         ) {
             // Auth Graph
             composable(Screen.Splash.route) {
-                SplashScreen(onTimeout = {
-                    navController.navigate(Screen.Login.route) {
+                SplashScreen(onNavigate = { route ->
+                    navController.navigate(route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 })
@@ -70,9 +70,7 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
             composable(Screen.Register.route) {
                 RegisterScreen(
                     onRegisterSuccess = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Register.route) { inclusive = true }
-                        }
+                        navController.popBackStack(Screen.Login.route, inclusive = false)
                     },
                     onNavigateToLogin = {
                         navController.navigate(Screen.Login.route)
