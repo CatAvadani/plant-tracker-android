@@ -81,13 +81,13 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
             // Main App Graph
             composable(Screen.Home.route) { 
                 HomeScreen(
-                    onPlantClick = { name -> navController.navigate("plant_details/$name") },
+                    onPlantClick = { id -> navController.navigate("plant_details/$id") },
                     onAddPlantClick = { navController.navigate(Screen.AddPlant.route) }
                 ) 
             }
             composable(Screen.Plants.route) { 
                 PlantsScreen(
-                    onPlantClick = { name -> navController.navigate("plant_details/$name") },
+                    onPlantClick = { id -> navController.navigate("plant_details/$id") },
                     onAddPlantClick = { navController.navigate(Screen.AddPlant.route) }
                 ) 
             }
@@ -103,10 +103,16 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
             // Secondary Screens
             composable(
                 route = Screen.PlantDetails.route,
-                arguments = listOf(navArgument("plantName") { type = NavType.StringType })
+                arguments = listOf(navArgument("plantId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val plantName = backStackEntry.arguments?.getString("plantName")
-                PlantDetailsScreen(plantName = plantName, onBack = { navController.popBackStack() })
+                val plantIdStr = backStackEntry.arguments?.getString("plantId") ?: return@composable
+                val plantId = plantIdStr.toIntOrNull() ?: return@composable
+
+                PlantDetailsScreen(
+                    plantId = plantId,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToEdit = { id -> navController.navigate("editPlant/$id") }
+                )
             }
 
             composable(Screen.AddPlant.route) {

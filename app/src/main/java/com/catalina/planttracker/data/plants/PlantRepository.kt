@@ -6,7 +6,7 @@ import com.catalina.planttracker.data.network.RetrofitInstance
 import com.catalina.planttracker.model.Plant
 
 class PlantRepository {
-    private val api = RetrofitInstance.plantApi
+    private val api get() = RetrofitInstance.plantApi
 
     suspend fun getPlants(): Result<List<Plant>> {
         return try {

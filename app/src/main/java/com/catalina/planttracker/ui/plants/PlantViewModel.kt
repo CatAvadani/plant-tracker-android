@@ -62,11 +62,14 @@ class PlantViewModel : ViewModel() {
         imageUrl: String?
     ) {
         viewModelScope.launch {
+            _uiState.value = PlantUiState.Loading
             repository.createPlant(
                 name, species, location, wateringFrequencyDays,
                 lastWatered, healthStatus, notes, imageUrl
             ).onSuccess {
                 loadPlants()
+            }.onFailure { exception ->
+                _uiState.value = PlantUiState.Error(exception.message ?: "Failed to create plant")
             }
         }
     }

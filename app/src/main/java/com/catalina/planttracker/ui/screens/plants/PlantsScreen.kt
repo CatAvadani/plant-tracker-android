@@ -7,16 +7,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.catalina.planttracker.model.fakePlants
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.catalina.planttracker.ui.components.PlantCard
+import com.catalina.planttracker.ui.plants.PlantUiState
+import com.catalina.planttracker.ui.plants.PlantViewModel
+import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlantsScreen(onPlantClick: (String) -> Unit, onAddPlantClick: () -> Unit) {
+fun PlantsScreen(
+    onPlantClick: (Int) -> Unit,
+    onAddPlantClick: () -> Unit,
+    viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadPlants()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -45,19 +62,44 @@ fun PlantsScreen(onPlantClick: (String) -> Unit, onAddPlantClick: () -> Unit) {
         },
         containerColor = Color(0xFFF1F8E9)
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(fakePlants) { plant ->
-                PlantCard(plant, onClick = { onPlantClick(plant.name) })
-            }
-            
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+            when (val currentState = state) {
+                is PlantUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+                is PlantUiState.Error -> {
+                    Text(
+                        text = currentState.message,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
+                    )
+                }
+                is PlantUiState.Success -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(currentState.plants) { plant ->
+                            PlantCard(plant, onClick = { onPlantClick(plant.id) })
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+                }
+                else -> {}
             }
         }
     }

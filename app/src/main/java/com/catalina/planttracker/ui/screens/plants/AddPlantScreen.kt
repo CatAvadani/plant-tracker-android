@@ -15,17 +15,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.catalina.planttracker.ui.plants.PlantUiState
+import com.catalina.planttracker.ui.plants.PlantViewModel
+import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddPlantScreen(onBack: () -> Unit) {
+    val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     var name by remember { mutableStateOf("") }
     var species by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var frequency by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
-    
+    var healthStatus by remember { mutableStateOf(0) }
+
     var nameError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState) {
+        if (uiState is PlantUiState.Success) {
+            viewModel.resetState()
+            onBack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -104,21 +120,48 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 minLines = 3
             )
 
+            if (uiState is PlantUiState.Error) {
+                Text(
+                    text = (uiState as PlantUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
+            val isLoading = uiState is PlantUiState.Loading
             Button(
                 onClick = { 
                     if (name.isBlank()) {
                         nameError = true
                     } else {
-                        onBack() 
+                        viewModel.createPlant(
+                            name = name,
+                            species = species.ifBlank { null },
+                            location = location.ifBlank { null },
+                            wateringFrequencyDays = frequency.toIntOrNull(),
+                            lastWatered = null,
+                            healthStatus = healthStatus,
+                            notes = notes.ifBlank { null },
+                            imageUrl = null
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Save Plant")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Save Plant")
+                }
             }
         }
     }

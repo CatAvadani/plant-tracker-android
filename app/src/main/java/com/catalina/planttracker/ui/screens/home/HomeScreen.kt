@@ -17,7 +17,7 @@ import com.catalina.planttracker.ui.components.SummaryCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onPlantClick: (String) -> Unit, onAddPlantClick: () -> Unit) {
+fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -69,7 +69,7 @@ fun HomeScreen(onPlantClick: (String) -> Unit, onAddPlantClick: () -> Unit) {
             }
 
             items(fakePlants) { plant ->
-                PlantCard(plant, onClick = { onPlantClick(plant.name) })
+                PlantCard(plant, onClick = { onPlantClick(plant.id) })
             }
             
             item {
