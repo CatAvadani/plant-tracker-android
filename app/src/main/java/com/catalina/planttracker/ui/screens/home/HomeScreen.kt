@@ -282,7 +282,12 @@ private fun HomeDashboardPanel(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(32.dp),
+                ambientColor = Color.Transparent,
+                spotColor = Color(0x66000000)
+            ),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
