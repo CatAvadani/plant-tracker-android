@@ -1,20 +1,32 @@
 package com.catalina.planttracker.data.plants
 
+import com.catalina.planttracker.data.model.ErrorResponse
 import com.catalina.planttracker.data.model.CreatePlantRequest
 import com.catalina.planttracker.data.model.UpdatePlantRequest
 import com.catalina.planttracker.data.network.RetrofitInstance
 import com.catalina.planttracker.model.Plant
+import com.google.gson.Gson
+import retrofit2.Response
 
 class PlantRepository {
     private val api get() = RetrofitInstance.plantApi
+    private val gson = Gson()
+
+    companion object {
+        private var cachedPlants: List<Plant>? = null
+    }
+
+    fun getCachedPlants(): List<Plant>? = cachedPlants
 
     suspend fun getPlants(): Result<List<Plant>> {
         return try {
             val response = api.getPlants()
             if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
+                val plants = response.body() ?: emptyList()
+                cachedPlants = plants
+                Result.success(plants)
             } else {
-                Result.failure(Exception("Failed to fetch plants: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to fetch plants")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -27,7 +39,7 @@ class PlantRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to fetch plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to fetch plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -57,9 +69,11 @@ class PlantRepository {
             )
             val response = api.createPlant(request)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val plant = response.body()!!
+                cachedPlants = cachedPlants?.let { current -> current + plant }
+                Result.success(plant)
             } else {
-                Result.failure(Exception("Failed to create plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to create plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -90,9 +104,13 @@ class PlantRepository {
             )
             val response = api.updatePlant(id, request)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val plant = response.body()!!
+                cachedPlants = cachedPlants?.map { current ->
+                    if (current.id == id) plant else current
+                }
+                Result.success(plant)
             } else {
-                Result.failure(Exception("Failed to update plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to update plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -103,12 +121,29 @@ class PlantRepository {
         return try {
             val response = api.deletePlant(id)
             if (response.isSuccessful) {
+                cachedPlants = cachedPlants?.filterNot { it.id == id }
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Failed to delete plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to delete plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private fun responseMessage(response: Response<*>, fallback: String): String {
+        val errorBody = response.errorBody()?.string()
+        val serverMessage = errorBody?.let { body ->
+            runCatching {
+                gson.fromJson(body, ErrorResponse::class.java).message
+            }.getOrNull()
+                ?: body.takeIf { it.isNotBlank() }
+        }
+
+        return if (!serverMessage.isNullOrBlank()) {
+            "$fallback: $serverMessage"
+        } else {
+            "$fallback: HTTP ${response.code()}"
         }
     }
 }

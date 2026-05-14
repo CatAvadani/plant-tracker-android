@@ -28,13 +28,21 @@ class PlantViewModel : ViewModel() {
 
     fun loadPlants() {
         viewModelScope.launch {
-            _uiState.value = PlantUiState.Loading
+            val cachedPlants = repository.getCachedPlants()
+            if (cachedPlants != null) {
+                _uiState.value = PlantUiState.Success(cachedPlants)
+            } else {
+                _uiState.value = PlantUiState.Loading
+            }
+
             repository.getPlants()
                 .onSuccess { plants ->
                     _uiState.value = PlantUiState.Success(plants)
                 }
                 .onFailure { exception ->
-                    _uiState.value = PlantUiState.Error(exception.message ?: "Unknown error")
+                    if (cachedPlants == null) {
+                        _uiState.value = PlantUiState.Error(exception.message ?: "Unknown error")
+                    }
                 }
         }
     }
@@ -66,8 +74,9 @@ class PlantViewModel : ViewModel() {
             repository.createPlant(
                 name, species, location, wateringFrequencyDays,
                 lastWatered, healthStatus, notes, imageUrl
-            ).onSuccess {
-                loadPlants()
+            ).onSuccess { plant ->
+                val cachedPlants = repository.getCachedPlants().orEmpty()
+                _uiState.value = PlantUiState.Success(cachedPlants.ifEmpty { listOf(plant) })
             }.onFailure { exception ->
                 _uiState.value = PlantUiState.Error(exception.message ?: "Failed to create plant")
             }
@@ -91,7 +100,7 @@ class PlantViewModel : ViewModel() {
                 id, name, species, location, wateringFrequencyDays,
                 lastWatered, healthStatus, notes, imageUrl
             ).onSuccess {
-                loadPlants()
+                _uiState.value = PlantUiState.Success(repository.getCachedPlants().orEmpty())
             }.onFailure { exception ->
                 _uiState.value = PlantUiState.Error(exception.message ?: "Failed to update plant")
             }
@@ -103,7 +112,7 @@ class PlantViewModel : ViewModel() {
             _uiState.value = PlantUiState.Loading
             repository.deletePlant(id)
                 .onSuccess {
-                    loadPlants()
+                    _uiState.value = PlantUiState.Success(repository.getCachedPlants().orEmpty())
                 }
                 .onFailure { exception ->
                     _uiState.value = PlantUiState.Error(exception.message ?: "Failed to delete plant")

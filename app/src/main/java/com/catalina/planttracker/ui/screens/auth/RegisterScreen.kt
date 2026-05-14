@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +34,8 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
@@ -71,7 +74,9 @@ fun RegisterScreen(
             onValueChange = { password = it },
             label = "Password",
             icon = Icons.Default.Lock,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            passwordVisible = passwordVisible,
+            onPasswordVisibilityChange = { passwordVisible = it },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         AuthField(
@@ -79,7 +84,9 @@ fun RegisterScreen(
             onValueChange = { confirmPassword = it },
             label = "Confirm Password",
             icon = Icons.Default.Lock,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            passwordVisible = confirmPasswordVisible,
+            onPasswordVisibilityChange = { confirmPasswordVisible = it },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
 
