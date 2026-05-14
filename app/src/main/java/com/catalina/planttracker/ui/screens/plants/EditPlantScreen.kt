@@ -1,5 +1,8 @@
 package com.catalina.planttracker.ui.screens.plants
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,15 +55,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCream
 import com.catalina.planttracker.ui.components.PlantDeepLeaf
@@ -102,6 +109,8 @@ fun EditPlantScreen(
     val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedPlant by viewModel.selectedPlant.collectAsStateWithLifecycle()
+    val uploadedImageUrl by viewModel.uploadedImageUrl.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     var name by remember { mutableStateOf("") }
     var species by remember { mutableStateOf("") }
@@ -111,6 +120,16 @@ fun EditPlantScreen(
     var healthStatus by remember { mutableStateOf(0) }
     var nameError by remember { mutableStateOf(false) }
     var isDataLoaded by remember { mutableStateOf(false) }
+
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var existingImageUrl by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    val pickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
 
     LaunchedEffect(id) {
         viewModel.loadPlant(id)
@@ -125,15 +144,38 @@ fun EditPlantScreen(
                 frequency = plant.wateringFrequencyDays?.toString() ?: ""
                 notes = plant.notes ?: ""
                 healthStatus = plant.healthStatus ?: 0
+                existingImageUrl = plant.imageUrl
                 isDataLoaded = true
             }
         }
     }
 
     LaunchedEffect(uiState) {
-        if (uiState is PlantUiState.Success) {
+        if (uiState is PlantUiState.Success && isSaving) {
             viewModel.resetState()
             onBack()
+        }
+    }
+
+    LaunchedEffect(uploadedImageUrl) {
+        if (uploadedImageUrl != null && isSaving) {
+            viewModel.updatePlant(
+                id = id,
+                name = name,
+                species = species.ifBlank { null },
+                location = location.ifBlank { null },
+                wateringFrequencyDays = frequency.toIntOrNull(),
+                lastWatered = selectedPlant?.lastWatered,
+                healthStatus = healthStatus,
+                notes = notes.ifBlank { null },
+                imageUrl = uploadedImageUrl
+            )
+        }
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState is PlantUiState.Error && isSaving) {
+            isSaving = false
         }
     }
 
@@ -176,7 +218,11 @@ fun EditPlantScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                EditPlantHero()
+                EditPlantHero(
+                    selectedImageUri = selectedImageUri,
+                    existingImageUrl = existingImageUrl,
+                    onPickImage = { pickerLauncher.launch("image/*") }
+                )
 
                 Card(
                     modifier = Modifier
@@ -254,17 +300,22 @@ fun EditPlantScreen(
                         if (name.isBlank()) {
                             nameError = true
                         } else {
-                            viewModel.updatePlant(
-                                id = id,
-                                name = name,
-                                species = species.ifBlank { null },
-                                location = location.ifBlank { null },
-                                wateringFrequencyDays = frequency.toIntOrNull(),
-                                lastWatered = selectedPlant?.lastWatered,
-                                healthStatus = healthStatus,
-                                notes = notes.ifBlank { null },
-                                imageUrl = selectedPlant?.imageUrl
-                            )
+                            isSaving = true
+                            if (selectedImageUri != null) {
+                                viewModel.uploadImage(selectedImageUri!!, context)
+                            } else {
+                                viewModel.updatePlant(
+                                    id = id,
+                                    name = name,
+                                    species = species.ifBlank { null },
+                                    location = location.ifBlank { null },
+                                    wateringFrequencyDays = frequency.toIntOrNull(),
+                                    lastWatered = selectedPlant?.lastWatered,
+                                    healthStatus = healthStatus,
+                                    notes = notes.ifBlank { null },
+                                    imageUrl = existingImageUrl
+                                )
+                            }
                         }
                     },
                     modifier = Modifier
@@ -304,11 +355,16 @@ fun EditPlantScreen(
 }
 
 @Composable
-private fun EditPlantHero() {
+private fun EditPlantHero(
+    selectedImageUri: Uri?,
+    existingImageUrl: String?,
+    onPickImage: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
+            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f))
+            .clickable { onPickImage() },
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -324,35 +380,66 @@ private fun EditPlantHero() {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            if (selectedImageUri != null || existingImageUrl != null) {
+                AsyncImage(
+                    model = selectedImageUri ?: existingImageUrl,
+                    contentDescription = "Plant image",
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(32.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                // Overlay for picking again
                 Box(
                     modifier = Modifier
-                        .size(72.dp)
-                        .background(PlantMint, CircleShape),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.BottomEnd
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = null,
-                        modifier = Modifier.size(34.dp),
-                        tint = PlantLeaf
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Change photo",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            color = PlantLeaf,
-                            fontWeight = FontWeight.Bold
+                    Box(
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .size(40.dp)
+                            .background(Color.White.copy(alpha = 0.8f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.AddAPhoto,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = PlantLeaf
                         )
-                    )
-                    Text(
-                        text = "Image upload will connect in Phase 4",
-                        style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
-                    )
+                    }
+                }
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .background(PlantMint, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = null,
+                            modifier = Modifier.size(34.dp),
+                            tint = PlantLeaf
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Change photo",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = PlantLeaf,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        Text(
+                            text = "Tap to select an image",
+                            style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
+                        )
+                    }
                 }
             }
         }

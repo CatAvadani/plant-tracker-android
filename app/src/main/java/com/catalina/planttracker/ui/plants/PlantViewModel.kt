@@ -1,5 +1,7 @@
 package com.catalina.planttracker.ui.plants
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -25,6 +27,9 @@ class PlantViewModel : ViewModel() {
 
     private val _selectedPlant = MutableStateFlow<Plant?>(null)
     val selectedPlant: StateFlow<Plant?> = _selectedPlant.asStateFlow()
+
+    private val _uploadedImageUrl = MutableStateFlow<String?>(null)
+    val uploadedImageUrl: StateFlow<String?> = _uploadedImageUrl.asStateFlow()
 
     fun loadPlants() {
         viewModelScope.launch {
@@ -123,6 +128,25 @@ class PlantViewModel : ViewModel() {
     fun resetState() {
         _uiState.value = PlantUiState.Idle
         _selectedPlant.value = null
+        _uploadedImageUrl.value = null
+    }
+
+    fun uploadImage(uri: Uri, context: Context) {
+        viewModelScope.launch {
+            _uiState.value = PlantUiState.Loading
+            repository.uploadImage(uri, context)
+                .onSuccess { url ->
+                    _uploadedImageUrl.value = url
+                    // We keep Loading state or move to Idle? 
+                    // Usually we stay in Loading until the actual create/update call finishes
+                    // But if we want to show preview before save, we might need a different state.
+                    // However, the instructions say "Wait for uploadedImageUrl to be non-null".
+                    _uiState.value = PlantUiState.Idle 
+                }
+                .onFailure { exception ->
+                    _uiState.value = PlantUiState.Error(exception.message ?: "Failed to upload image")
+                }
+        }
     }
 }
 

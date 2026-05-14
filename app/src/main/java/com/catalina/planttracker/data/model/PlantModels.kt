@@ -21,3 +21,7 @@ data class UpdatePlantRequest(
     val notes: String? = null,
     val imageUrl: String? = null
 )
+
+data class ImageUploadResponse(
+    val imageUrl: String
+)
