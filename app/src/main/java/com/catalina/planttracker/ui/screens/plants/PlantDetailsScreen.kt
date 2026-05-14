@@ -566,7 +566,8 @@ private fun DetailStatCard(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(14.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
@@ -576,7 +577,7 @@ private fun DetailStatCard(
             ) {
                 Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(17.dp))
             }
-            Column {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = value,
                     style = MaterialTheme.typography.titleLarge.copy(

@@ -64,6 +64,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -544,9 +545,9 @@ private fun HealthStatusSelector(
                     color = tileColor
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxSize().padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Box(
                             modifier = Modifier
@@ -561,12 +562,14 @@ private fun HealthStatusSelector(
                                 tint = contentColor
                             )
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = plantStatusLabel(choice.value),
-                            style = MaterialTheme.typography.labelSmall.copy(
+                            style = MaterialTheme.typography.titleSmall.copy(
                                 color = labelColor,
                                 fontWeight = FontWeight.Bold
                             ),
+                            textAlign = TextAlign.Center,
                             maxLines = 2
                         )
                     }
