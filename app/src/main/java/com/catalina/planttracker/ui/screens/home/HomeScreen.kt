@@ -281,10 +281,10 @@ private fun HomeDashboardPanel(
                 )
                 .padding(20.dp)
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -334,16 +334,16 @@ private fun HomeDashboardPanel(
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text(
-                        text = "Your plant room",
+                        text = "Care snapshot",
                         style = MaterialTheme.typography.headlineSmall.copy(
                             color = PlantInk,
                             fontWeight = FontWeight.Bold
                         )
                     )
                     Text(
-                        text = "Track care status, watering rhythm, and collection details in one calm workspace.",
+                        text = "A quick read on collection health and the plants that need your attention.",
                         style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted)
                     )
                 }
@@ -352,13 +352,16 @@ private fun HomeDashboardPanel(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricPill(
                         label = "Plants",
                         value = total,
                         icon = Icons.Default.Eco,
                         color = PlantLeaf,
+                        containerColor = PlantLeaf,
+                        valueColor = Color.White,
+                        labelColor = Color.White.copy(alpha = 0.82f),
                         modifier = Modifier.weight(1f)
                     )
                     MetricPill(
@@ -366,18 +369,20 @@ private fun HomeDashboardPanel(
                         value = needsCare,
                         icon = Icons.Default.WarningAmber,
                         color = Color(0xFF8A6500),
+                        containerColor = Color(0xFFFFF2B8),
                         modifier = Modifier.weight(1f)
                     )
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricPill(
                         label = "Healthy",
                         value = healthy,
                         icon = Icons.Default.CheckCircle,
                         color = PlantLeaf,
+                        containerColor = Color(0xFFDFF2DE),
                         modifier = Modifier.weight(1f)
                     )
                     MetricPill(
@@ -385,6 +390,7 @@ private fun HomeDashboardPanel(
                         value = critical,
                         icon = Icons.Default.WarningAmber,
                         color = Color(0xFFB71C1C),
+                        containerColor = Color(0xFFFFE2DE),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -397,10 +403,11 @@ private fun HomeDashboardPanel(
 private fun StatusBanner(needsCare: Int) {
     val hasCare = needsCare > 0
     val color = if (hasCare) Color(0xFF8A6500) else PlantLeaf
+    val containerColor = if (hasCare) Color(0xFFFFF6D8) else Color(0xFFE5F4E5)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.82f)
+        color = containerColor
     ) {
         Row(
             modifier = Modifier.padding(13.dp),
@@ -443,35 +450,49 @@ private fun MetricPill(
     label: String,
     value: Int,
     color: Color,
+    containerColor: Color,
+    valueColor: Color = PlantInk,
+    labelColor: Color = PlantMuted,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.74f)
+        color = containerColor
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .background(Color.White.copy(alpha = 0.62f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(17.dp)
+                )
+            }
+            Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = value.toString(),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = PlantInk,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = valueColor,
                         fontWeight = FontWeight.Bold
                     )
                 )
+                Spacer(modifier = Modifier.width(7.dp))
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall.copy(color = PlantMuted)
+                    modifier = Modifier.padding(bottom = 4.dp),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = labelColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
             }
         }
