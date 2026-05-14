@@ -31,3 +31,7 @@ data class RegisterResponse(
 data class ApiKeyResponse(
     val apiKey: String
 )
+
+data class ErrorResponse(
+    val message: String? = null
+)
