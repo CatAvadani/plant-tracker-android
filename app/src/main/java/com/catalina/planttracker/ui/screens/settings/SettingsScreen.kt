@@ -14,12 +14,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.catalina.planttracker.ui.auth.AuthViewModel
+import com.catalina.planttracker.ui.auth.AuthViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onLogout: () -> Unit) {
+    val context = LocalContext.current
+    val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+    
+    val user = remember { viewModel.getUser() }
+    
     var darkMode by remember { mutableStateOf(false) }
     var notifications by remember { mutableStateOf(true) }
 
@@ -68,8 +77,8 @@ fun SettingsScreen(onLogout: () -> Unit) {
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(text = "Jane Doe", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text(text = "jane.doe@example.com", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                        Text(text = user.second ?: "User", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(text = user.first ?: "No email", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
                     }
                 }
             }
@@ -131,7 +140,10 @@ fun SettingsScreen(onLogout: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onLogout,
+                onClick = {
+                    viewModel.logout()
+                    onLogout()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
                 shape = RoundedCornerShape(16.dp)

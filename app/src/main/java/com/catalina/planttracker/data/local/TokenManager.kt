@@ -56,6 +56,6 @@ class TokenManager(context: Context) {
     }
 
     fun clearAll() {
-        sharedPreferences.edit().clear().apply()
+        sharedPreferences.edit().clear().commit()
     }
 }
