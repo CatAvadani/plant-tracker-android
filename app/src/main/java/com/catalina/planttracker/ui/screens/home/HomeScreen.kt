@@ -59,7 +59,9 @@ import com.catalina.planttracker.ui.components.SectionHeader
 import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,6 +127,21 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                 val healthyCount = plants.count { it.healthStatus == 0 }
                 val criticalCount = plants.count { it.healthStatus == 2 }
 
+                val today = Calendar.getInstance().time
+                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                fun daysSince(dateStr: String?): Int {
+                    val date = dateStr?.let { runCatching { sdf.parse(it) }.getOrNull() }
+                        ?: return Int.MAX_VALUE
+                    return ((today.time - date.time) / (1000L * 60 * 60 * 24)).toInt()
+                }
+                val forgottenPlants = plants
+                    .filter { plant ->
+                        plant.healthStatus != 1 && plant.healthStatus != 2 &&
+                        daysSince(plant.lastWatered) >= 14
+                    }
+                    .sortedByDescending { daysSince(it.lastWatered) }
+                    .take(5)
+
                 if (plants.isEmpty()) {
                     Box(
                         modifier = Modifier
@@ -183,13 +200,18 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 
                     item {
                         SectionHeader(
-                            title = "Recently added",
-                            subtitle = "A quick path back into your collection",
-                            trailing = "${plants.take(3).size} shown"
+                            title = "Not recently cared for",
+                            subtitle = "No watering logged in the past 14 days",
+                            trailing = if (forgottenPlants.isEmpty()) "All good" else "${forgottenPlants.size} plants"
                         )
                     }
-                    items(plants.sortedByDescending { it.id }.take(3)) { plant ->
-                        PlantCard(plant, onClick = { onPlantClick(plant.id) })
+
+                    if (forgottenPlants.isEmpty()) {
+                        item { AllWateredBanner() }
+                    } else {
+                        items(forgottenPlants) { plant ->
+                            PlantCard(plant, onClick = { onPlantClick(plant.id) })
+                        }
                     }
                 }
             }
@@ -436,6 +458,35 @@ private fun AllClearBanner() {
             )
             Text(
                 text = "All clear — every plant is healthy",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = PlantDeepLeaf,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun AllWateredBanner() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = PlantMint.copy(alpha = 0.6f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = PlantLeaf,
+                modifier = Modifier.size(22.dp)
+            )
+            Text(
+                text = "All plants are watered on schedule",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = PlantDeepLeaf,
                     fontWeight = FontWeight.SemiBold
