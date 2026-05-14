@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class TokenManager(context: Context) {
     private val masterKey = MasterKey.Builder(context)
@@ -23,6 +26,13 @@ class TokenManager(context: Context) {
         private const val KEY_API_KEY = "api_key"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_NAME = "user_display_name"
+
+        private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
+
+        fun emitSessionExpired() {
+            _sessionExpired.tryEmit(Unit)
+        }
     }
 
     fun saveToken(token: String) {
