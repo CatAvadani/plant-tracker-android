@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -28,6 +29,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -54,7 +56,6 @@ import com.catalina.planttracker.ui.components.PlantMint
 import com.catalina.planttracker.ui.components.PlantMuted
 import com.catalina.planttracker.ui.components.ScreenStateCard
 import com.catalina.planttracker.ui.components.SectionHeader
-import com.catalina.planttracker.ui.components.StatTile
 import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
@@ -135,6 +136,20 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                     .filter { it.healthStatus == 1 || it.healthStatus == 2 }
                     .sortedByDescending { it.healthStatus ?: 0 }
                 val healthyCount = plants.count { it.healthStatus == 0 }
+                val criticalCount = plants.count { it.healthStatus == 2 }
+
+                if (plants.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .padding(horizontal = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        EmptyHomeState()
+                    }
+                    return@Scaffold
+                }
 
                 LazyColumn(
                     modifier = Modifier
@@ -144,41 +159,12 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
                     item {
-                        HomeHeroCard(
-                            plants = plants,
-                            needsAttentionCount = needsAttentionPlants.size,
-                            healthyCount = healthyCount
+                        HomeDashboardPanel(
+                            total = plants.size,
+                            healthy = healthyCount,
+                            needsCare = needsAttentionPlants.size,
+                            critical = criticalCount
                         )
-                    }
-
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            StatTile(
-                                label = "Total",
-                                value = plants.size.toString(),
-                                icon = Icons.Default.Eco,
-                                modifier = Modifier.weight(1f),
-                                containerColor = Color(0xFFDDF0D8)
-                            )
-                            StatTile(
-                                label = "Care",
-                                value = needsAttentionPlants.size.toString(),
-                                icon = Icons.Default.WarningAmber,
-                                modifier = Modifier.weight(1f),
-                                containerColor = Color(0xFFFFF3BF),
-                                contentColor = Color(0xFF8A6500)
-                            )
-                            StatTile(
-                                label = "Healthy",
-                                value = healthyCount.toString(),
-                                icon = Icons.Default.CheckCircle,
-                                modifier = Modifier.weight(1f),
-                                containerColor = Color(0xFFE6F3D7)
-                            )
-                        }
                     }
 
                     item {
@@ -203,17 +189,15 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                         }
                     }
 
-                    if (plants.isNotEmpty()) {
-                        item {
-                            SectionHeader(
-                                title = "Recently added",
-                                subtitle = "A quick path back into your collection",
-                                trailing = "${plants.take(3).size} shown"
-                            )
-                        }
-                        items(plants.sortedByDescending { it.id }.take(3)) { plant ->
-                            PlantCard(plant, onClick = { onPlantClick(plant.id) })
-                        }
+                    item {
+                        SectionHeader(
+                            title = "Recently added",
+                            subtitle = "A quick path back into your collection",
+                            trailing = "${plants.take(3).size} shown"
+                        )
+                    }
+                    items(plants.sortedByDescending { it.id }.take(3)) { plant ->
+                        PlantCard(plant, onClick = { onPlantClick(plant.id) })
                     }
 
                     item {
@@ -228,26 +212,61 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 }
 
 @Composable
-private fun HomeHeroCard(
-    plants: List<Plant>,
-    needsAttentionCount: Int,
-    healthyCount: Int
-) {
-    val heroTitle = when {
-        plants.isEmpty() -> "Start your plant shelf"
-        needsAttentionCount > 0 -> "$needsAttentionCount plant${if (needsAttentionCount == 1) "" else "s"} need care"
-        else -> "Your garden is steady"
+private fun EmptyHomeState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 72.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(104.dp)
+                .background(Color.White.copy(alpha = 0.78f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(78.dp)
+                    .background(PlantMint, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = null,
+                    tint = PlantLeaf,
+                    modifier = Modifier.size(42.dp)
+                )
+            }
+        }
+        Text(
+            text = "No plants yet",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = PlantInk
+            )
+        )
+        Text(
+            text = "Tap the + button to add your first plant and start tracking care.",
+            style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted),
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
-    val heroSubtitle = when {
-        plants.isEmpty() -> "Add your first plant and build a care rhythm that is easy to follow."
-        needsAttentionCount > 0 -> "Check the care queue below before adding new plants."
-        else -> "$healthyCount healthy plants are on track today."
-    }
+}
 
+@Composable
+private fun HomeDashboardPanel(
+    total: Int,
+    healthy: Int,
+    needsCare: Int,
+    critical: Int
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.14f)),
+            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -257,10 +276,10 @@ private fun HomeHeroCard(
                 .fillMaxWidth()
                 .background(
                     Brush.horizontalGradient(
-                        listOf(PlantCream, Color.White, Color(0xFFDFF0D8))
+                        listOf(Color.White, PlantCream, Color(0xFFE8F5E9))
                     )
                 )
-                .padding(22.dp)
+                .padding(20.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -272,39 +291,188 @@ private fun HomeHeroCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(58.dp)
-                            .background(PlantMint, CircleShape),
+                            .size(42.dp)
+                            .background(PlantMint, RoundedCornerShape(14.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.WaterDrop,
+                            imageVector = Icons.Default.Eco,
                             contentDescription = null,
                             tint = PlantLeaf,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "LEAF CARE",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = PlantMuted,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                        Text(
+                            text = "Dashboard",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = PlantInk,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(50.dp),
+                        color = Color.White.copy(alpha = 0.78f)
+                    ) {
+                        Text(
+                            text = "Live",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = PlantLeaf,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "${plants.size} tracked",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = PlantLeaf,
+                        text = "Your plant room",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            color = PlantInk,
                             fontWeight = FontWeight.Bold
                         )
                     )
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = heroTitle,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = PlantInk
-                        )
-                    )
-                    Text(
-                        text = heroSubtitle,
+                        text = "Track care status, watering rhythm, and collection details in one calm workspace.",
                         style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted)
                     )
                 }
+
+                StatusBanner(needsCare = needsCare)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MetricPill(
+                        label = "Plants",
+                        value = total,
+                        icon = Icons.Default.Eco,
+                        color = PlantLeaf,
+                        modifier = Modifier.weight(1f)
+                    )
+                    MetricPill(
+                        label = "Care",
+                        value = needsCare,
+                        icon = Icons.Default.WarningAmber,
+                        color = Color(0xFF8A6500),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MetricPill(
+                        label = "Healthy",
+                        value = healthy,
+                        icon = Icons.Default.CheckCircle,
+                        color = PlantLeaf,
+                        modifier = Modifier.weight(1f)
+                    )
+                    MetricPill(
+                        label = "Critical",
+                        value = critical,
+                        icon = Icons.Default.WarningAmber,
+                        color = Color(0xFFB71C1C),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusBanner(needsCare: Int) {
+    val hasCare = needsCare > 0
+    val color = if (hasCare) Color(0xFF8A6500) else PlantLeaf
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White.copy(alpha = 0.82f)
+    ) {
+        Row(
+            modifier = Modifier.padding(13.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .background(color.copy(alpha = 0.12f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (hasCare) Icons.Default.WarningAmber else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (hasCare) "$needsCare plant${if (needsCare == 1) "" else "s"} need attention" else "No plants need attention today",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = PlantInk,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = if (hasCare) "Start with the care queue below." else "Based on health status across your collection.",
+                    style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: Int,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White.copy(alpha = 0.74f)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = value.toString(),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = PlantInk,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(color = PlantMuted)
+                )
             }
         }
     }
