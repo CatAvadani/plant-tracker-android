@@ -1,6 +1,7 @@
 package com.catalina.planttracker.ui.screens.plants
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -223,7 +224,11 @@ private fun PlantDetailsContent(
                 label = "Water",
                 value = plant.wateringFrequencyDays?.let { "${it}d" } ?: "-",
                 icon = Icons.Default.WaterDrop,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                tint = PlantLeaf,
+                containerColor = PlantLeaf,
+                valueColor = Color.White,
+                labelColor = Color.White.copy(alpha = 0.82f)
             )
             DetailStatCard(
                 label = "Health",
@@ -235,13 +240,16 @@ private fun PlantDetailsContent(
                 },
                 icon = Icons.Default.Eco,
                 modifier = Modifier.weight(1f),
-                tint = plantStatusColor(plant.healthStatus)
+                tint = plantStatusColor(plant.healthStatus),
+                containerColor = plantStatusContainerColor(plant.healthStatus)
             )
             DetailStatCard(
                 label = "Last",
                 value = formatDate(plant.lastWatered),
                 icon = Icons.Default.EventRepeat,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                tint = PlantLeaf,
+                containerColor = PlantMint
             )
         }
 
@@ -251,7 +259,9 @@ private fun PlantDetailsContent(
         )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(10.dp, RoundedCornerShape(30.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
             shape = RoundedCornerShape(30.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -277,7 +287,9 @@ private fun PlantDetailsContent(
         )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(10.dp, RoundedCornerShape(30.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
             shape = RoundedCornerShape(30.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -403,9 +415,16 @@ private fun PlantHero(plant: Plant) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(18.dp),
+                    .padding(18.dp)
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = RoundedCornerShape(24.dp),
+                        ambientColor = PlantInk.copy(alpha = 0.12f),
+                        spotColor = PlantInk.copy(alpha = 0.08f)
+                    ),
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.92f)
+                color = Color.White.copy(alpha = 0.97f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.72f))
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -433,12 +452,17 @@ private fun DetailStatCard(
     value: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    tint: Color = PlantLeaf
+    tint: Color = PlantLeaf,
+    containerColor: Color = Color.White,
+    valueColor: Color = PlantInk,
+    labelColor: Color = PlantMuted
 ) {
     Card(
-        modifier = modifier.height(104.dp),
+        modifier = modifier
+            .height(112.dp)
+            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = tint.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -447,12 +471,19 @@ private fun DetailStatCard(
                 .padding(14.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .background(Color.White.copy(alpha = 0.62f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(17.dp))
+            }
             Column {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = PlantInk,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = valueColor,
                         fontWeight = FontWeight.Bold
                     ),
                     maxLines = 1,
@@ -460,10 +491,22 @@ private fun DetailStatCard(
                 )
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelMedium.copy(color = PlantMuted)
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = labelColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
             }
         }
+    }
+}
+
+private fun plantStatusContainerColor(healthStatus: Int?): Color {
+    return when (healthStatus) {
+        0 -> Color(0xFFDFF2DE)
+        1 -> Color(0xFFFFF2B8)
+        2 -> Color(0xFFFFE2DE)
+        else -> PlantMint
     }
 }
 
