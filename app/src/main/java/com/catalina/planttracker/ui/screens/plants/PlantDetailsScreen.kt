@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
@@ -29,9 +30,27 @@ import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 fun PlantDetailsScreen(plantId: Int, onBack: () -> Unit, onNavigateToEdit: (Int) -> Unit) {
     val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
     val selectedPlant by viewModel.selectedPlant.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(plantId) {
         viewModel.loadPlant(plantId)
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState is PlantUiState.Success && selectedPlant == null) {
+            // This assumes Success after delete means we can go back
+            // but we need to be careful as Success is also for loadPlants
+            // Better to check if we were in Loading and then Success
+        }
+    }
+    
+    // Improved navigation after delete
+    var isDeleting by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState) {
+        if (isDeleting && uiState is PlantUiState.Success) {
+            onBack()
+            viewModel.resetState()
+        }
     }
 
     Scaffold(
@@ -47,11 +66,13 @@ fun PlantDetailsScreen(plantId: Int, onBack: () -> Unit, onNavigateToEdit: (Int)
                     IconButton(onClick = { onNavigateToEdit(plantId) }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
                     }
-                    IconButton(onClick = {
-                        viewModel.deletePlant(plantId)
-                        onBack()
-                        viewModel.resetState()
-                    }) {
+                    IconButton(
+                        onClick = {
+                            isDeleting = true
+                            viewModel.deletePlant(plantId)
+                        },
+                        enabled = uiState !is PlantUiState.Loading
+                    ) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 },
@@ -60,20 +81,28 @@ fun PlantDetailsScreen(plantId: Int, onBack: () -> Unit, onNavigateToEdit: (Int)
         },
         containerColor = Color(0xFFF1F8E9)
     ) { innerPadding ->
-        val plant = selectedPlant
-        if (plant == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFF2E7D32))
+        Column(modifier = Modifier.padding(innerPadding)) {
+            if (uiState is PlantUiState.Error) {
+                Text(
+                    text = (uiState as PlantUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+
+            val plant = selectedPlant
+            if (plant == null || uiState is PlantUiState.Loading && !isDeleting) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF2E7D32))
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                 // Plant Image
                 Card(
                     modifier = Modifier
@@ -126,23 +155,6 @@ fun PlantDetailsScreen(plantId: Int, onBack: () -> Unit, onNavigateToEdit: (Int)
                 Text(text = plant.notes ?: "No notes available.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
 
                 Spacer(modifier = Modifier.height(24.dp))
-
-                // Action Buttons
-                Button(
-                    onClick = { /* Water Now */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text("Water Now")
-                }
-
-                OutlinedButton(
-                    onClick = { /* Care Log */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text("View Care Log", color = Color(0xFF2E7D32))
                 }
             }
         }

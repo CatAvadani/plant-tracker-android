@@ -12,7 +12,7 @@ data class CreatePlantRequest(
 )
 
 data class UpdatePlantRequest(
-    val name: String,
+    val name: String? = null,
     val species: String? = null,
     val location: String? = null,
     val wateringFrequencyDays: Int? = null,

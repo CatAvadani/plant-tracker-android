@@ -86,21 +86,28 @@ class PlantViewModel : ViewModel() {
         imageUrl: String?
     ) {
         viewModelScope.launch {
+            _uiState.value = PlantUiState.Loading
             repository.updatePlant(
                 id, name, species, location, wateringFrequencyDays,
                 lastWatered, healthStatus, notes, imageUrl
             ).onSuccess {
                 loadPlants()
+            }.onFailure { exception ->
+                _uiState.value = PlantUiState.Error(exception.message ?: "Failed to update plant")
             }
         }
     }
 
     fun deletePlant(id: Int) {
         viewModelScope.launch {
-            val error = repository.deletePlant(id)
-            if (error == null) {
-                loadPlants()
-            }
+            _uiState.value = PlantUiState.Loading
+            repository.deletePlant(id)
+                .onSuccess {
+                    loadPlants()
+                }
+                .onFailure { exception ->
+                    _uiState.value = PlantUiState.Error(exception.message ?: "Failed to delete plant")
+                }
         }
     }
 

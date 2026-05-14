@@ -99,16 +99,16 @@ class PlantRepository {
         }
     }
 
-    suspend fun deletePlant(id: Int): String? {
+    suspend fun deletePlant(id: Int): Result<Unit> {
         return try {
             val response = api.deletePlant(id)
             if (response.isSuccessful) {
-                null
+                Result.success(Unit)
             } else {
-                "Failed to delete plant: ${response.message()}"
+                Result.failure(Exception("Failed to delete plant: ${response.message()}"))
             }
         } catch (e: Exception) {
-            e.message ?: "An unknown error occurred"
+            Result.failure(e)
         }
     }
 }

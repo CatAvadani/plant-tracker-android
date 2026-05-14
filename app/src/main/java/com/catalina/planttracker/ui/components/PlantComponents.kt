@@ -61,27 +61,31 @@ fun PlantCard(plant: Plant, modifier: Modifier = Modifier, onClick: () -> Unit =
                     color = Color.Gray
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                val health = HealthStatus.fromInt(plant.healthStatus ?: 0)
+                val healthInt = plant.healthStatus
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val statusColor = when(healthInt) {
+                        0 -> Color(0xFF2E7D32) // Darker Green for better contrast
+                        1 -> Color(0xFFC49000) // Darker Yellow/Gold
+                        2 -> Color(0xFFB71C1C) // Darker Red
+                        else -> Color.Gray
+                    }
+                    val statusText = when(healthInt) {
+                        0 -> "Healthy"
+                        1 -> "Needs Attention"
+                        2 -> "Critical"
+                        else -> "Unknown"
+                    }
                     Icon(
                         imageVector = Icons.Default.WaterDrop,
                         contentDescription = null,
-                        tint = when(health) {
-                            HealthStatus.HEALTHY -> Color(0xFF4CAF50)
-                            HealthStatus.NEEDS_ATTENTION -> Color(0xFFFBC02D)
-                            HealthStatus.CRITICAL -> Color(0xFFD32F2F)
-                        },
+                        tint = statusColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = health.name.replace("_", " ").lowercase().capitalize(),
+                        text = statusText,
                         style = MaterialTheme.typography.labelMedium,
-                        color = when(health) {
-                            HealthStatus.HEALTHY -> Color(0xFF4CAF50)
-                            HealthStatus.NEEDS_ATTENTION -> Color(0xFFFBC02D)
-                            HealthStatus.CRITICAL -> Color(0xFFD32F2F)
-                        }
+                        color = statusColor
                     )
                 }
             }
