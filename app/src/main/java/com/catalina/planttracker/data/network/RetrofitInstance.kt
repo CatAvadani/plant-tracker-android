@@ -51,4 +51,12 @@ object RetrofitInstance {
     fun getAuthService(context: Context): AuthApiService {
         return createService(context, AuthApiService::class.java)
     }
+
+    val authApi: AuthApiService by lazy {
+        retrofit?.create(AuthApiService::class.java) ?: throw IllegalStateException("Retrofit not initialized")
+    }
+
+    val plantApi: PlantApiService by lazy {
+        retrofit?.create(PlantApiService::class.java) ?: throw IllegalStateException("Retrofit not initialized")
+    }
 }
