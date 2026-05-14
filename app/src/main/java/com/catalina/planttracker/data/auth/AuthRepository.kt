@@ -6,6 +6,8 @@ import com.catalina.planttracker.data.model.LoginRequest
 import com.catalina.planttracker.data.model.RegisterRequest
 import com.catalina.planttracker.data.network.AuthApiService
 import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import retrofit2.Response
 
 class AuthRepository(
@@ -70,8 +72,10 @@ class AuthRepository(
         }
     }
 
-    fun logout() {
-        tokenManager.clearAll()
+    suspend fun logout() {
+        withContext(Dispatchers.IO) {
+            tokenManager.clearAll()
+        }
     }
 
     fun isLoggedIn(): Boolean {

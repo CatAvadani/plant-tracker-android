@@ -52,8 +52,11 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         _authState.value = AuthState.Idle
     }
 
-    fun logout() {
-        repository.logout()
+    fun logout(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.logout()
+            onComplete()
+        }
     }
 
     fun getUser(): Pair<String?, String?> {

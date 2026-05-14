@@ -74,7 +74,9 @@ fun LoginScreen(
         AuthPrimaryButton(
             text = "Login",
             loading = authState is AuthState.Loading,
-            enabled = authState !is AuthState.Loading,
+            enabled = authState !is AuthState.Loading &&
+                email.isNotBlank() &&
+                password.isNotBlank(),
             onClick = { viewModel.login(email, password) },
         )
         AuthMetaRow("Your plant journal is synced securely.")

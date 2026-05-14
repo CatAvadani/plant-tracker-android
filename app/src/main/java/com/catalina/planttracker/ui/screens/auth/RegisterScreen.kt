@@ -91,7 +91,11 @@ fun RegisterScreen(
         AuthPrimaryButton(
             text = "Register",
             loading = authState is AuthState.Loading,
-            enabled = authState !is AuthState.Loading && password.isNotEmpty() && password == confirmPassword,
+            enabled = authState !is AuthState.Loading &&
+                name.isNotBlank() &&
+                email.isNotBlank() &&
+                password.isNotBlank() &&
+                password == confirmPassword,
             onClick = { 
                 if (password == confirmPassword) {
                     viewModel.register(email, password, confirmPassword, name) 

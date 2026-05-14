@@ -148,8 +148,7 @@ fun SettingsScreen(onLogout: () -> Unit) {
 
             Button(
                 onClick = {
-                    viewModel.logout()
-                    onLogout()
+                    viewModel.logout(onComplete = onLogout)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
