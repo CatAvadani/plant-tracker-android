@@ -106,7 +106,7 @@ fun PlantsScreen(
                 onClick = onAddPlantClick,
                 containerColor = PlantLeaf,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(20.dp)
+                shape = CircleShape
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Plant")
             }
