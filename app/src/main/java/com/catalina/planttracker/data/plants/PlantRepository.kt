@@ -1,12 +1,16 @@
 package com.catalina.planttracker.data.plants
 
+import com.catalina.planttracker.data.model.ErrorResponse
 import com.catalina.planttracker.data.model.CreatePlantRequest
 import com.catalina.planttracker.data.model.UpdatePlantRequest
 import com.catalina.planttracker.data.network.RetrofitInstance
 import com.catalina.planttracker.model.Plant
+import com.google.gson.Gson
+import retrofit2.Response
 
 class PlantRepository {
     private val api get() = RetrofitInstance.plantApi
+    private val gson = Gson()
 
     suspend fun getPlants(): Result<List<Plant>> {
         return try {
@@ -14,7 +18,7 @@ class PlantRepository {
             if (response.isSuccessful) {
                 Result.success(response.body() ?: emptyList())
             } else {
-                Result.failure(Exception("Failed to fetch plants: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to fetch plants")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -27,7 +31,7 @@ class PlantRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to fetch plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to fetch plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -59,7 +63,7 @@ class PlantRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to create plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to create plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -92,7 +96,7 @@ class PlantRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to update plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to update plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -105,10 +109,26 @@ class PlantRepository {
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Failed to delete plant: ${response.message()}"))
+                Result.failure(Exception(responseMessage(response, "Failed to delete plant")))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private fun responseMessage(response: Response<*>, fallback: String): String {
+        val errorBody = response.errorBody()?.string()
+        val serverMessage = errorBody?.let { body ->
+            runCatching {
+                gson.fromJson(body, ErrorResponse::class.java).message
+            }.getOrNull()
+                ?: body.takeIf { it.isNotBlank() }
+        }
+
+        return if (!serverMessage.isNullOrBlank()) {
+            "$fallback: $serverMessage"
+        } else {
+            "$fallback: HTTP ${response.code()}"
         }
     }
 }

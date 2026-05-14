@@ -9,7 +9,6 @@ Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Ma
 - **Main app UI**: Home, Plants, Calendar, Settings, Plant Details, Add Plant, and Edit Plant (placeholder) screens exist.
 - **Plant CRUD**: Full CRUD (Create, Read, Update, Delete) is implemented and connected to the backend API.
 - **Recent focus**: Connected plant screens to backend API, implemented Plant CRUD, refactored models for API alignment, improved health status UI with accessibility considerations, and standardized repository error handling with `Result`.
-- **Backend alignment**: Route casing fixes and display name persistence still need backend updates/redeployment.
 
 ## Technical Stack
 - **Language**: Kotlin
@@ -85,8 +84,6 @@ Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Ma
 
 ## Known Limitations
 - Watering calendar still needs connection to real reminder/history data.
-- Backend route casing fixes are still in progress and require Railway redeployment.
-- New registrations currently persist `NULL` display names until the backend display name mapping is fixed.
 - Edit Profile and Privacy Policy rows in Settings are placeholders.
 - Dark Mode toggle is UI-only and does not yet change the app theme.
 - Notifications toggle is UI-only and does not yet schedule reminders.
