@@ -9,20 +9,24 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
         val request = chain.request()
         val path = request.url.encodedPath
         val requestBuilder = request.newBuilder()
+        val isAuthAttempt = path.contains("api/auth/login") || path.contains("api/auth/register")
 
-        // Don't add auth headers to login or register endpoints
-        if (!path.contains("api/auth/login") && !path.contains("api/auth/register")) {
-            // Add JWT Token
+        if (!isAuthAttempt) {
             tokenManager.getToken()?.let { token ->
                 requestBuilder.addHeader("Authorization", "Bearer $token")
             }
-
-            // Add API Key
             tokenManager.getApiKey()?.let { apiKey ->
                 requestBuilder.addHeader("X-Api-Key", apiKey)
             }
         }
 
-        return chain.proceed(requestBuilder.build())
+        val response = chain.proceed(requestBuilder.build())
+
+        if (!isAuthAttempt && response.code == 401) {
+            tokenManager.clearAll()
+            TokenManager.emitSessionExpired()
+        }
+
+        return response
     }
 }

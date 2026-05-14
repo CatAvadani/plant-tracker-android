@@ -3,6 +3,8 @@ package com.catalina.planttracker.data.network
 import com.catalina.planttracker.model.Plant
 import com.catalina.planttracker.data.model.CreatePlantRequest
 import com.catalina.planttracker.data.model.UpdatePlantRequest
+import com.catalina.planttracker.data.model.ImageUploadResponse
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -21,4 +23,10 @@ interface PlantApiService {
 
     @DELETE("api/plants/{id}")
     suspend fun deletePlant(@Path("id") id: Int): Response<Unit>
+
+    @Multipart
+    @POST("api/plants/image")
+    suspend fun uploadImage(
+        @Part imageFile: MultipartBody.Part
+    ): Response<ImageUploadResponse>
 }

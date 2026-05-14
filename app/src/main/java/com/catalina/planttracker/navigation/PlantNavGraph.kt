@@ -1,13 +1,16 @@
 package com.catalina.planttracker.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import com.catalina.planttracker.data.local.TokenManager
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,8 +22,10 @@ import com.catalina.planttracker.ui.screens.auth.LoginScreen
 import com.catalina.planttracker.ui.screens.auth.RegisterScreen
 import com.catalina.planttracker.ui.screens.auth.SplashScreen
 import com.catalina.planttracker.ui.screens.calendar.CalendarScreen
+import com.catalina.planttracker.ui.screens.carelogs.CareLogScreen
 import com.catalina.planttracker.ui.screens.home.HomeScreen
 import com.catalina.planttracker.ui.screens.plants.AddPlantScreen
+import com.catalina.planttracker.ui.screens.plants.EditPlantScreen
 import com.catalina.planttracker.ui.screens.plants.PlantDetailsScreen
 import com.catalina.planttracker.ui.screens.plants.PlantsScreen
 import com.catalina.planttracker.ui.screens.settings.SettingsScreen
@@ -29,6 +34,14 @@ import com.catalina.planttracker.ui.screens.settings.SettingsScreen
 fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
+
+    LaunchedEffect(Unit) {
+        TokenManager.sessionExpired.collect {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     // Define which screens should show the bottom bar
     val showBottomBar = currentRoute in listOf(
@@ -114,7 +127,10 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
                 PlantDetailsScreen(
                     plantId = plantId,
                     onBack = { navController.popBackStack() },
-                    onNavigateToEdit = { id -> navController.navigate("edit_plant/$id") }
+                    onNavigateToEdit = { id -> navController.navigate("edit_plant/$id") },
+                    onNavigateToCareHistory = { id, name ->
+                        navController.navigate("careLog/$id/${Uri.encode(name)}")
+                    }
                 )
             }
 
@@ -122,17 +138,32 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
                 route = Screen.EditPlant.route,
                 arguments = listOf(navArgument("plantId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val plantIdStr = backStackEntry.arguments?.getString("plantId") ?: return@composable
-                val plantId = plantIdStr.toIntOrNull() ?: return@composable
-
-                // Placeholder for EditPlantScreen
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    Text("Edit Plant Screen (ID: $plantId) - Coming Soon")
-                }
+                val plantId = backStackEntry.arguments?.getString("plantId") ?: return@composable
+                EditPlantScreen(
+                    plantId = plantId,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             composable(Screen.AddPlant.route) {
                 AddPlantScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(
+                route = Screen.CareLog.route,
+                arguments = listOf(
+                    navArgument("plantId") { type = NavType.StringType },
+                    navArgument("plantName") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val plantId = backStackEntry.arguments?.getString("plantId") ?: return@composable
+                val plantName = backStackEntry.arguments?.getString("plantName")?.let(Uri::decode)
+                    ?: return@composable
+                CareLogScreen(
+                    plantId = plantId,
+                    plantName = plantName,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

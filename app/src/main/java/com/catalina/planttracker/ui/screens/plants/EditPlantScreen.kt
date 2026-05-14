@@ -84,23 +84,32 @@ import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
-private data class HealthChoice(
+private data class EditHealthChoice(
     val value: Int,
     val icon: ImageVector,
     val containerColor: Color
 )
 
-private val healthChoices = listOf(
-    HealthChoice(0, Icons.Default.Eco, PlantLeaf),
-    HealthChoice(1, Icons.Default.WarningAmber, Color(0xFFFFF2B8)),
-    HealthChoice(2, Icons.Default.WarningAmber, Color(0xFFFFE2DE))
+private val editHealthChoices = listOf(
+    EditHealthChoice(0, Icons.Default.Eco, PlantLeaf),
+    EditHealthChoice(1, Icons.Default.WarningAmber, Color(0xFFFFF2B8)),
+    EditHealthChoice(2, Icons.Default.WarningAmber, Color(0xFFFFE2DE))
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddPlantScreen(onBack: () -> Unit) {
+fun EditPlantScreen(
+    plantId: String,
+    onBack: () -> Unit
+) {
+    val id = plantId.toIntOrNull() ?: run {
+        onBack()
+        return
+    }
+
     val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedPlant by viewModel.selectedPlant.collectAsStateWithLifecycle()
     val uploadedImageUrl by viewModel.uploadedImageUrl.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -111,14 +120,35 @@ fun AddPlantScreen(onBack: () -> Unit) {
     var notes by remember { mutableStateOf("") }
     var healthStatus by remember { mutableStateOf(0) }
     var nameError by remember { mutableStateOf(false) }
+    var isDataLoaded by remember { mutableStateOf(false) }
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var existingImageUrl by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
 
     val pickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
+    }
+
+    LaunchedEffect(id) {
+        viewModel.loadPlant(id)
+    }
+
+    LaunchedEffect(selectedPlant) {
+        selectedPlant?.let { plant ->
+            if (!isDataLoaded) {
+                name = plant.name
+                species = plant.species ?: ""
+                location = plant.location ?: ""
+                frequency = plant.wateringFrequencyDays?.toString() ?: ""
+                notes = plant.notes ?: ""
+                healthStatus = plant.healthStatus ?: 0
+                existingImageUrl = plant.imageUrl
+                isDataLoaded = true
+            }
+        }
     }
 
     LaunchedEffect(uiState) {
@@ -128,15 +158,15 @@ fun AddPlantScreen(onBack: () -> Unit) {
         }
     }
 
-    // Effect to handle createPlant after image upload completes
     LaunchedEffect(uploadedImageUrl) {
         if (uploadedImageUrl != null && isSaving) {
-            viewModel.createPlant(
+            viewModel.updatePlant(
+                id = id,
                 name = name,
                 species = species.ifBlank { null },
                 location = location.ifBlank { null },
                 wateringFrequencyDays = frequency.toIntOrNull(),
-                lastWatered = null,
+                lastWatered = selectedPlant?.lastWatered,
                 healthStatus = healthStatus,
                 notes = notes.ifBlank { null },
                 imageUrl = uploadedImageUrl
@@ -155,7 +185,7 @@ fun AddPlantScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Text(
-                        "Add New Plant",
+                        "Edit Plant",
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = PlantDeepLeaf
@@ -176,151 +206,174 @@ fun AddPlantScreen(onBack: () -> Unit) {
         },
         containerColor = PlantBackground
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
-            AddPlantHero(
-                selectedImageUri = selectedImageUri,
-                onPickImage = { pickerLauncher.launch("image/*") }
-            )
-
-            Card(
+        if (uiState is PlantUiState.Error && selectedPlant == null && !isDataLoaded) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(12.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(20.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    AddPlantField(
-                        value = name,
-                        onValueChange = {
-                            name = it
-                            nameError = it.isBlank()
-                        },
-                        label = "Plant name",
-                        icon = Icons.Default.LocalFlorist,
-                        isError = nameError,
-                        supportingText = if (nameError) "Name is required" else null
-                    )
-
-                    AddPlantField(
-                        value = species,
-                        onValueChange = { species = it },
-                        label = "Species",
-                        icon = Icons.Default.Eco
-                    )
-
-                    AddPlantField(
-                        value = location,
-                        onValueChange = { location = it },
-                        label = "Location",
-                        icon = Icons.Default.Place
-                    )
-
-                    AddPlantField(
-                        value = frequency,
-                        onValueChange = { frequency = it.filter(Char::isDigit) },
-                        label = "Watering frequency",
-                        icon = Icons.Default.EventRepeat,
-                        keyboardType = KeyboardType.Number,
-                        suffix = "days"
-                    )
-
-                    HealthStatusSelector(
-                        selected = healthStatus,
-                        onSelected = { healthStatus = it }
-                    )
-
-                    AddPlantField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        label = "Notes",
-                        icon = Icons.AutoMirrored.Filled.Notes,
-                        minLines = 3
-                    )
-                }
-            }
-
-            if (uiState is PlantUiState.Error) {
                 ScreenStateCard(
-                    title = "Could not save plant",
+                    title = "Could not load plant",
                     message = (uiState as PlantUiState.Error).message,
                     isError = true
                 )
             }
-
-            val isLoading = uiState is PlantUiState.Loading
-            Button(
-                onClick = {
-                    if (isSaving || isLoading) return@Button
-                    if (name.isBlank()) {
-                        nameError = true
-                    } else {
-                        isSaving = true
-                        if (selectedImageUri != null) {
-                            viewModel.uploadImage(selectedImageUri!!, context)
-                        } else {
-                            viewModel.createPlant(
-                                name = name,
-                                species = species.ifBlank { null },
-                                location = location.ifBlank { null },
-                                wateringFrequencyDays = frequency.toIntOrNull(),
-                                lastWatered = null,
-                                healthStatus = healthStatus,
-                                notes = notes.ifBlank { null },
-                                imageUrl = null
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .shadow(8.dp, RoundedCornerShape(18.dp), ambientColor = PlantLeaf.copy(alpha = 0.18f)),
-                enabled = !isSaving && !isLoading && name.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PlantLeaf,
-                    disabledContainerColor = Color(0xFFB7CDB1),
-                    contentColor = Color.White,
-                    disabledContentColor = Color.White.copy(alpha = 0.78f)
-                ),
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Save,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text("Save Plant", fontWeight = FontWeight.SemiBold)
-                }
+        } else if (selectedPlant == null && !isDataLoaded) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = PlantLeaf)
             }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                EditPlantHero(
+                    selectedImageUri = selectedImageUri,
+                    existingImageUrl = existingImageUrl,
+                    onPickImage = { pickerLauncher.launch("image/*") }
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(12.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
+                    shape = RoundedCornerShape(32.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        EditPlantField(
+                            value = name,
+                            onValueChange = {
+                                name = it
+                                nameError = it.isBlank()
+                            },
+                            label = "Plant name",
+                            icon = Icons.Default.LocalFlorist,
+                            isError = nameError,
+                            supportingText = if (nameError) "Name is required" else null
+                        )
+
+                        EditPlantField(
+                            value = species,
+                            onValueChange = { species = it },
+                            label = "Species",
+                            icon = Icons.Default.Eco
+                        )
+
+                        EditPlantField(
+                            value = location,
+                            onValueChange = { location = it },
+                            label = "Location",
+                            icon = Icons.Default.Place
+                        )
+
+                        EditPlantField(
+                            value = frequency,
+                            onValueChange = { frequency = it.filter(Char::isDigit) },
+                            label = "Watering frequency",
+                            icon = Icons.Default.EventRepeat,
+                            keyboardType = KeyboardType.Number,
+                            suffix = "days"
+                        )
+
+                        HealthStatusSelector(
+                            selected = healthStatus,
+                            onSelected = { healthStatus = it }
+                        )
+
+                        EditPlantField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = "Notes",
+                            icon = Icons.AutoMirrored.Filled.Notes,
+                            minLines = 3
+                        )
+                    }
+                }
+
+                if (uiState is PlantUiState.Error) {
+                    ScreenStateCard(
+                        title = "Could not update plant",
+                        message = (uiState as PlantUiState.Error).message,
+                        isError = true
+                    )
+                }
+
+                val isLoading = uiState is PlantUiState.Loading
+                Button(
+                    onClick = {
+                        if (isSaving || isLoading) return@Button
+                        if (name.isBlank()) {
+                            nameError = true
+                        } else {
+                            isSaving = true
+                            if (selectedImageUri != null) {
+                                viewModel.uploadImage(selectedImageUri!!, context)
+                            } else {
+                                viewModel.updatePlant(
+                                    id = id,
+                                    name = name,
+                                    species = species.ifBlank { null },
+                                    location = location.ifBlank { null },
+                                    wateringFrequencyDays = frequency.toIntOrNull(),
+                                    lastWatered = selectedPlant?.lastWatered,
+                                    healthStatus = healthStatus,
+                                    notes = notes.ifBlank { null },
+                                    imageUrl = existingImageUrl
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .shadow(8.dp, RoundedCornerShape(18.dp), ambientColor = PlantLeaf.copy(alpha = 0.18f)),
+                    enabled = !isSaving && !isLoading && name.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PlantLeaf,
+                        disabledContainerColor = Color(0xFFB7CDB1),
+                        contentColor = Color.White,
+                        disabledContentColor = Color.White.copy(alpha = 0.78f)
+                    ),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Save Changes", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
 
 @Composable
-private fun AddPlantHero(
+private fun EditPlantHero(
     selectedImageUri: Uri?,
+    existingImageUrl: String?,
     onPickImage: () -> Unit
 ) {
     Card(
@@ -343,10 +396,10 @@ private fun AddPlantHero(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            if (selectedImageUri != null) {
+            if (selectedImageUri != null || existingImageUrl != null) {
                 AsyncImage(
-                    model = selectedImageUri,
-                    contentDescription = "Selected plant image",
+                    model = selectedImageUri ?: existingImageUrl,
+                    contentDescription = "Plant image",
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(32.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -392,7 +445,7 @@ private fun AddPlantHero(
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Add photo",
+                            text = "Change photo",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 color = PlantLeaf,
                                 fontWeight = FontWeight.Bold
@@ -410,7 +463,7 @@ private fun AddPlantHero(
 }
 
 @Composable
-private fun AddPlantField(
+private fun EditPlantField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -485,7 +538,7 @@ private fun HealthStatusSelector(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            healthChoices.forEach { choice ->
+            editHealthChoices.forEach { choice ->
                 val selectedChoice = selected == choice.value
                 val color = plantStatusColor(choice.value)
                 val selectedContainerColor = when (choice.value) {

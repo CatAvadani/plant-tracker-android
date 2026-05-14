@@ -1,5 +1,7 @@
 package com.catalina.planttracker.ui.plants
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -9,6 +11,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 sealed class PlantUiState {
     object Idle : PlantUiState()
@@ -25,6 +30,9 @@ class PlantViewModel : ViewModel() {
 
     private val _selectedPlant = MutableStateFlow<Plant?>(null)
     val selectedPlant: StateFlow<Plant?> = _selectedPlant.asStateFlow()
+
+    private val _uploadedImageUrl = MutableStateFlow<String?>(null)
+    val uploadedImageUrl: StateFlow<String?> = _uploadedImageUrl.asStateFlow()
 
     fun loadPlants() {
         viewModelScope.launch {
@@ -49,12 +57,15 @@ class PlantViewModel : ViewModel() {
 
     fun loadPlant(id: Int) {
         viewModelScope.launch {
+            _uiState.value = PlantUiState.Loading
             repository.getPlant(id)
                 .onSuccess { plant ->
                     _selectedPlant.value = plant
+                    _uiState.value = PlantUiState.Idle
                 }
-                .onFailure { 
+                .onFailure { exception ->
                     _selectedPlant.value = null
+                    _uiState.value = PlantUiState.Error(exception.message ?: "Failed to fetch plant")
                 }
         }
     }
@@ -120,9 +131,47 @@ class PlantViewModel : ViewModel() {
         }
     }
 
+    fun updateLastWatered(id: Int) {
+        viewModelScope.launch {
+            val plant = _selectedPlant.value ?: return@launch
+            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            repository.updatePlant(
+                id = id,
+                name = plant.name,
+                species = plant.species,
+                location = plant.location,
+                wateringFrequencyDays = plant.wateringFrequencyDays,
+                lastWatered = today,
+                healthStatus = plant.healthStatus,
+                notes = plant.notes,
+                imageUrl = plant.imageUrl
+            ).onSuccess { updated ->
+                _selectedPlant.value = updated
+            }.onFailure { exception ->
+                _uiState.value = PlantUiState.Error(exception.message ?: "Failed to update last watered")
+            }
+        }
+    }
+
     fun resetState() {
         _uiState.value = PlantUiState.Idle
         _selectedPlant.value = null
+        _uploadedImageUrl.value = null
+    }
+
+    fun uploadImage(uri: Uri, context: Context) {
+        viewModelScope.launch {
+            _uploadedImageUrl.value = null
+            _uiState.value = PlantUiState.Loading
+            repository.uploadImage(uri, context)
+                .onSuccess { url ->
+                    _uploadedImageUrl.value = url
+                    _uiState.value = PlantUiState.Idle
+                }
+                .onFailure { exception ->
+                    _uiState.value = PlantUiState.Error(exception.message ?: "Failed to upload image")
+                }
+        }
     }
 }
 
