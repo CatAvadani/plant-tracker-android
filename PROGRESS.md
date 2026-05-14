@@ -1,7 +1,7 @@
-# Plant Tracker Android - Progress Summary
+# Leaf Care - Progress Summary
 
 ## Project Overview
-Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Material 3. The project is currently in **Phase 3: Plants CRUD**. Authentication and plant management are connected to the deployed .NET API.
+Leaf Care is a calm plant-care app built with Jetpack Compose and Material 3. The project is currently in **Phase 3: Plants CRUD**. Authentication and plant management are connected to the deployed .NET API.
 
 ## Current Status
 - **Authentication**: Real login/register API calls are implemented.

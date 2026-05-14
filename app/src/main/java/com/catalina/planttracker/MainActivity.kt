@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.catalina.planttracker.data.network.RetrofitInstance
 import com.catalina.planttracker.navigation.PlantNavGraph
-import com.catalina.planttracker.ui.theme.PlantTrackerAndroidTheme
+import com.catalina.planttracker.ui.theme.LeafCareTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            PlantTrackerAndroidTheme {
+            LeafCareTheme {
                 PlantNavGraph()
             }
         }
