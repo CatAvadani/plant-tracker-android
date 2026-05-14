@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -21,7 +20,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.WarningAmber
-import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -90,7 +88,7 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                 onClick = onAddPlantClick,
                 containerColor = PlantLeaf,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(20.dp)
+                shape = CircleShape
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Plant")
             }
@@ -177,11 +175,31 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 
                     if (needsAttentionPlants.isEmpty()) {
                         item {
-                            ScreenStateCard(
-                                title = "All clear today",
-                                message = "Every plant is marked healthy. Enjoy the quiet garden.",
-                                icon = Icons.Default.CheckCircle
-                            )
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp),
+                                color = Color(0xFFE5F4E5)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = PlantLeaf,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = "All clear — every plant is healthy",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = PlantDeepLeaf,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    )
+                                }
+                            }
                         }
                     } else {
                         items(needsAttentionPlants) { plant ->
@@ -200,9 +218,7 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                         PlantCard(plant, onClick = { onPlantClick(plant.id) })
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(86.dp))
-                    }
+                    item { Spacer(modifier = Modifier.height(86.dp)) }
                 }
             }
 
@@ -279,100 +295,58 @@ private fun HomeDashboardPanel(
                         listOf(Color.White, PlantCream, Color(0xFFE8F5E9))
                     )
                 )
-                .padding(20.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Compact header: total count + live badge
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .background(PlantMint, RoundedCornerShape(14.dp)),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Eco,
-                            contentDescription = null,
-                            tint = PlantLeaf,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "LEAF CARE",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = PlantMuted,
-                                fontWeight = FontWeight.Bold
+                            text = "$total",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                color = PlantDeepLeaf,
+                                fontWeight = FontWeight.ExtraBold
                             )
                         )
                         Text(
-                            text = "Dashboard",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = PlantInk,
-                                fontWeight = FontWeight.Bold
-                            )
+                            text = "plant${if (total == 1) "" else "s"} in your collection",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted)
                         )
                     }
                     Surface(
                         shape = RoundedCornerShape(50.dp),
-                        color = Color.White.copy(alpha = 0.78f)
+                        color = Color(0xFFE5F4E5)
                     ) {
-                        Text(
-                            text = "Live",
+                        Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = PlantLeaf,
-                                fontWeight = FontWeight.Bold
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .background(PlantLeaf, CircleShape)
                             )
-                        )
+                            Text(
+                                text = "Live",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = PlantLeaf,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    Text(
-                        text = "Care snapshot",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            color = PlantInk,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                    Text(
-                        text = "A quick read on collection health and the plants that need your attention.",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted)
-                    )
-                }
-
-                StatusBanner(needsCare = needsCare)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    MetricPill(
-                        label = "Plants",
-                        value = total,
-                        icon = Icons.Default.Eco,
-                        color = PlantLeaf,
-                        containerColor = PlantLeaf,
-                        valueColor = Color.White,
-                        labelColor = Color.White.copy(alpha = 0.82f),
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricPill(
-                        label = "Care",
-                        value = needsCare,
-                        icon = Icons.Default.WarningAmber,
-                        color = Color(0xFF8A6500),
-                        containerColor = Color(0xFFFFF2B8),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -386,11 +360,34 @@ private fun HomeDashboardPanel(
                         modifier = Modifier.weight(1f)
                     )
                     MetricPill(
+                        label = "Need care",
+                        value = needsCare,
+                        icon = Icons.Default.WarningAmber,
+                        color = Color(0xFF8A6500),
+                        containerColor = Color(0xFFFFF2B8),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MetricPill(
                         label = "Critical",
                         value = critical,
                         icon = Icons.Default.WarningAmber,
                         color = Color(0xFFB71C1C),
                         containerColor = Color(0xFFFFE2DE),
+                        modifier = Modifier.weight(1f)
+                    )
+                    MetricPill(
+                        label = "Total",
+                        value = total,
+                        icon = Icons.Default.Eco,
+                        color = PlantLeaf,
+                        containerColor = PlantLeaf,
+                        valueColor = Color.White,
+                        labelColor = Color.White.copy(alpha = 0.82f),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -399,50 +396,6 @@ private fun HomeDashboardPanel(
     }
 }
 
-@Composable
-private fun StatusBanner(needsCare: Int) {
-    val hasCare = needsCare > 0
-    val color = if (hasCare) Color(0xFF8A6500) else PlantLeaf
-    val containerColor = if (hasCare) Color(0xFFFFF6D8) else Color(0xFFE5F4E5)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = containerColor
-    ) {
-        Row(
-            modifier = Modifier.padding(13.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .background(color.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (hasCare) Icons.Default.WarningAmber else Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(19.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (hasCare) "$needsCare plant${if (needsCare == 1) "" else "s"} need attention" else "No plants need attention today",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = PlantInk,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = if (hasCare) "Start with the care queue below." else "Based on health status across your collection.",
-                    style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun MetricPill(
@@ -461,40 +414,33 @@ private fun MetricPill(
         color = containerColor
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(30.dp)
-                    .background(Color.White.copy(alpha = 0.62f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(17.dp)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    color = valueColor,
+                    fontWeight = FontWeight.Bold
                 )
-            }
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = value.toString(),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = valueColor,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Spacer(modifier = Modifier.width(7.dp))
-                Text(
-                    text = label,
-                    modifier = Modifier.padding(bottom = 4.dp),
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = labelColor,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = labelColor,
+                    fontWeight = FontWeight.SemiBold
+                ),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }
