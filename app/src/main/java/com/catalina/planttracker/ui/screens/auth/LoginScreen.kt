@@ -1,13 +1,15 @@
 package com.catalina.planttracker.ui.screens.auth
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalContext
@@ -38,67 +40,43 @@ fun LoginScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    AuthScreenFrame(
+        title = "Welcome back",
+        subtitle = "Sign in to check watering plans, plant health, and upcoming care.",
+        footer = {
+            TextButton(onClick = onNavigateToRegister) {
+                Text("Create a new account", color = AuthLeaf)
+            }
+        }
     ) {
-        Text(
-            text = "Welcome Back",
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B5E20)
-            )
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        OutlinedTextField(
+        Spacer(modifier = Modifier.height(4.dp))
+        AuthField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth(),
+            label = "Email",
+            icon = Icons.Default.Email,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
+        AuthField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
+            label = "Password",
+            icon = Icons.Default.Lock,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        
+
         if (authState is AuthState.Error) {
-            Text(
-                text = (authState as AuthState.Error).message,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
+            AuthErrorMessage((authState as AuthState.Error).message)
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Button(
+        Spacer(modifier = Modifier.height(4.dp))
+        AuthPrimaryButton(
+            text = "Login",
+            loading = authState is AuthState.Loading,
+            enabled = authState !is AuthState.Loading,
             onClick = { viewModel.login(email, password) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-            enabled = authState !is AuthState.Loading
-        ) {
-            if (authState is AuthState.Loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color.White,
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Text("Login")
-            }
-        }
-        TextButton(onClick = onNavigateToRegister) {
-            Text("Don't have an account? Register", color = Color(0xFF2E7D32))
-        }
+        )
+        AuthMetaRow("Your plant journal is synced securely.")
     }
 }
