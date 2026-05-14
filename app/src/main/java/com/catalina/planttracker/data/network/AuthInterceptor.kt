@@ -9,8 +9,9 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
         val request = chain.request()
         val path = request.url.encodedPath
         val requestBuilder = request.newBuilder()
+        val isAuthAttempt = path.contains("api/auth/login") || path.contains("api/auth/register")
 
-        if (!path.contains("api/auth/login") && !path.contains("api/auth/register")) {
+        if (!isAuthAttempt) {
             tokenManager.getToken()?.let { token ->
                 requestBuilder.addHeader("Authorization", "Bearer $token")
             }
@@ -21,7 +22,7 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
 
         val response = chain.proceed(requestBuilder.build())
 
-        if (response.code == 401) {
+        if (!isAuthAttempt && response.code == 401) {
             tokenManager.clearAll()
             TokenManager.emitSessionExpired()
         }

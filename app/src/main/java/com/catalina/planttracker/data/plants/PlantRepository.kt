@@ -12,7 +12,9 @@ import com.google.gson.Gson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody
+import okio.BufferedSink
+import okio.source
 import retrofit2.Response
 
 class PlantRepository {
@@ -141,19 +143,20 @@ class PlantRepository {
     suspend fun uploadImage(imageUri: Uri, context: Context): Result<String> {
         return try {
             val contentResolver = context.contentResolver
-            val inputStream = contentResolver.openInputStream(imageUri)
-                ?: return Result.failure(Exception("Could not open input stream"))
-
-            val bytes = inputStream.use { it.readBytes() }
-            if (bytes.isEmpty()) {
+            val contentLength = contentResolver.fileSize(imageUri)
+            if (contentLength == 0L) {
                 return Result.failure(Exception("Selected image file is empty"))
             }
-
             val mediaType = (contentResolver.getType(imageUri) ?: "image/jpeg")
                 .toMediaTypeOrNull()
                 ?: "image/jpeg".toMediaType()
             val fileName = contentResolver.fileName(imageUri) ?: "plant_image.jpg"
-            val requestFile = bytes.toRequestBody(mediaType)
+            val requestFile = ContentUriRequestBody(
+                context = context.applicationContext,
+                uri = imageUri,
+                mediaType = mediaType,
+                contentLength = contentLength
+            )
             val partNames = listOf("image", "imageFile", "file")
 
             var lastError = "Failed to upload image"
@@ -189,11 +192,44 @@ class PlantRepository {
     }
 }
 
+private class ContentUriRequestBody(
+    context: Context,
+    private val uri: Uri,
+    private val mediaType: okhttp3.MediaType,
+    private val contentLength: Long?
+) : RequestBody() {
+    private val contentResolver = context.contentResolver
+
+    override fun contentType(): okhttp3.MediaType = mediaType
+
+    override fun contentLength(): Long = contentLength ?: -1L
+
+    override fun writeTo(sink: BufferedSink) {
+        val inputStream = contentResolver.openInputStream(uri)
+            ?: throw IllegalStateException("Could not open input stream")
+
+        inputStream.use { input ->
+            sink.writeAll(input.source())
+        }
+    }
+}
+
 private fun android.content.ContentResolver.fileName(uri: Uri): String? {
     return query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
         if (nameIndex >= 0 && cursor.moveToFirst()) {
             cursor.getString(nameIndex)
+        } else {
+            null
+        }
+    }
+}
+
+private fun android.content.ContentResolver.fileSize(uri: Uri): Long? {
+    return query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+        val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+        if (sizeIndex >= 0 && cursor.moveToFirst() && !cursor.isNull(sizeIndex)) {
+            cursor.getLong(sizeIndex)
         } else {
             null
         }

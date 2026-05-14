@@ -39,11 +39,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.catalina.planttracker.R
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCard
 import com.catalina.planttracker.ui.components.PlantCream
@@ -81,7 +84,10 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Plant")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(R.string.home_action_add_plant)
+                )
             }
         },
         containerColor = PlantBackground
@@ -96,8 +102,8 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     ScreenStateCard(
-                        title = "Loading your garden",
-                        message = "Fetching the latest plant care details.",
+                        title = stringResource(R.string.home_loading_title),
+                        message = stringResource(R.string.home_loading_message),
                         isLoading = true
                     )
                 }
@@ -112,7 +118,7 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     ScreenStateCard(
-                        title = "Could not load plants",
+                        title = stringResource(R.string.home_error_title),
                         message = state.message,
                         isError = true
                     )
@@ -182,9 +188,12 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 
                     item {
                         SectionHeader(
-                            title = "Care queue",
-                            subtitle = "Plants that need attention first",
-                            trailing = "${needsAttentionPlants.size} open"
+                            title = stringResource(R.string.home_care_queue_title),
+                            subtitle = stringResource(R.string.home_care_queue_subtitle),
+                            trailing = stringResource(
+                                R.string.home_open_count,
+                                needsAttentionPlants.size
+                            )
                         )
                     }
 
@@ -200,9 +209,17 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 
                     item {
                         SectionHeader(
-                            title = "Not recently cared for",
-                            subtitle = "No watering logged in the past 14 days",
-                            trailing = if (forgottenPlants.isEmpty()) "All good" else "${forgottenPlants.size} plants"
+                            title = stringResource(R.string.home_forgotten_title),
+                            subtitle = stringResource(R.string.home_forgotten_subtitle),
+                            trailing = if (forgottenPlants.isEmpty()) {
+                                stringResource(R.string.home_all_good)
+                            } else {
+                                pluralStringResource(
+                                    R.plurals.home_plants_count,
+                                    forgottenPlants.size,
+                                    forgottenPlants.size
+                                )
+                            }
                         )
                     }
 
@@ -224,14 +241,13 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 @Composable
 private fun HomeGreetingHeader(total: Int) {
     val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-        in 0..11 -> "Good morning"
-        in 12..16 -> "Good afternoon"
-        else -> "Good evening"
+        in 0..11 -> stringResource(R.string.home_greeting_morning)
+        in 12..16 -> stringResource(R.string.home_greeting_afternoon)
+        else -> stringResource(R.string.home_greeting_evening)
     }
     val subtitle = when {
-        total == 0 -> "Start building your garden"
-        total == 1 -> "1 plant in your collection"
-        else -> "$total plants in your collection"
+        total == 0 -> stringResource(R.string.home_collection_empty_subtitle)
+        else -> pluralStringResource(R.plurals.home_collection_subtitle, total, total)
     }
 
     Column(
@@ -246,7 +262,7 @@ private fun HomeGreetingHeader(total: Int) {
             )
         )
         Text(
-            text = "My Garden",
+            text = stringResource(R.string.home_title),
             style = MaterialTheme.typography.headlineLarge.copy(
                 color = PlantDeepLeaf,
                 fontWeight = FontWeight.ExtraBold
@@ -312,7 +328,11 @@ private fun HomeDashboardPanel(
                             )
                         )
                         Text(
-                            text = "plant${if (total == 1) "" else "s"} in your collection",
+                            text = pluralStringResource(
+                                R.plurals.home_dashboard_collection_label,
+                                total,
+                                total
+                            ),
                             style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted)
                         )
                     }
@@ -331,7 +351,7 @@ private fun HomeDashboardPanel(
                                     .background(PlantLeaf, CircleShape)
                             )
                             Text(
-                                text = "Live",
+                                text = stringResource(R.string.home_dashboard_live),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     color = PlantLeaf,
                                     fontWeight = FontWeight.Bold
@@ -346,7 +366,7 @@ private fun HomeDashboardPanel(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricPill(
-                        label = "Healthy",
+                        label = stringResource(R.string.home_metric_healthy),
                         value = healthy,
                         icon = Icons.Default.CheckCircle,
                         color = PlantLeaf,
@@ -354,7 +374,7 @@ private fun HomeDashboardPanel(
                         modifier = Modifier.weight(1f)
                     )
                     MetricPill(
-                        label = "Need care",
+                        label = stringResource(R.string.home_metric_need_care),
                         value = needsCare,
                         icon = Icons.Default.WarningAmber,
                         color = Color(0xFF8A6500),
@@ -367,7 +387,7 @@ private fun HomeDashboardPanel(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MetricPill(
-                        label = "Critical",
+                        label = stringResource(R.string.home_metric_critical),
                         value = critical,
                         icon = Icons.Default.WarningAmber,
                         color = Color(0xFFB71C1C),
@@ -375,7 +395,7 @@ private fun HomeDashboardPanel(
                         modifier = Modifier.weight(1f)
                     )
                     MetricPill(
-                        label = "Total",
+                        label = stringResource(R.string.home_metric_total),
                         value = total,
                         icon = Icons.Default.Eco,
                         color = PlantLeaf,
@@ -457,7 +477,7 @@ private fun AllClearBanner() {
                 modifier = Modifier.size(22.dp)
             )
             Text(
-                text = "All clear — every plant is healthy",
+                text = stringResource(R.string.home_all_clear_banner),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = PlantDeepLeaf,
                     fontWeight = FontWeight.SemiBold
@@ -486,7 +506,7 @@ private fun AllWateredBanner() {
                 modifier = Modifier.size(22.dp)
             )
             Text(
-                text = "All plants are watered on schedule",
+                text = stringResource(R.string.home_all_watered_banner),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = PlantDeepLeaf,
                     fontWeight = FontWeight.SemiBold
@@ -526,14 +546,14 @@ private fun EmptyHomeState() {
             }
         }
         Text(
-            text = "No plants yet",
+            text = stringResource(R.string.home_empty_title),
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold,
                 color = PlantInk
             )
         )
         Text(
-            text = "Tap the + button to add your first plant and start tracking care.",
+            text = stringResource(R.string.home_empty_message),
             style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center

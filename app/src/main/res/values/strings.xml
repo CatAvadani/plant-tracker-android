@@ -1,3 +1,57 @@
 <resources>
     <string name="app_name">Leaf Care</string>
+    <string name="action_back">Back</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_save">Save</string>
+    <string name="care_log_type_watered">Watered</string>
+    <string name="care_log_type_fertilized">Fertilized</string>
+    <string name="care_log_type_repotted">Repotted</string>
+    <string name="care_log_type_pruned">Pruned</string>
+    <string name="care_log_type_treated_for_pests">Treated for Pests</string>
+    <string name="care_log_type_health_check">Health Check</string>
+    <string name="care_log_type_other">Other</string>
+    <string name="care_log_action_add">Add care log</string>
+    <string name="care_log_invalid_plant">Could not open care history.</string>
+    <string name="care_log_empty_title">No care history yet</string>
+    <string name="care_log_sheet_title">Log Care</string>
+    <string name="care_log_notes_optional">Notes (optional)</string>
+    <string name="home_action_add_plant">Add Plant</string>
+    <string name="home_loading_title">Loading your garden</string>
+    <string name="home_loading_message">Fetching the latest plant care details.</string>
+    <string name="home_error_title">Could not load plants</string>
+    <string name="home_care_queue_title">Care queue</string>
+    <string name="home_care_queue_subtitle">Plants that need attention first</string>
+    <string name="home_open_count">%1$d open</string>
+    <string name="home_forgotten_title">Not recently cared for</string>
+    <string name="home_forgotten_subtitle">No watering logged in the past 14 days</string>
+    <string name="home_all_good">All good</string>
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="home_collection_empty_subtitle">Start building your garden</string>
+    <string name="home_title">My Garden</string>
+    <string name="home_dashboard_live">Live</string>
+    <string name="home_metric_healthy">Healthy</string>
+    <string name="home_metric_need_care">Need care</string>
+    <string name="home_metric_critical">Critical</string>
+    <string name="home_metric_total">Total</string>
+    <string name="home_all_clear_banner">All clear - every plant is healthy</string>
+    <string name="home_all_watered_banner">All plants are watered on schedule</string>
+    <string name="home_empty_title">No plants yet</string>
+    <string name="home_empty_message">Tap the + button to add your first plant and start tracking care.</string>
+    <string name="plant_details_watering_logged">Watering logged!</string>
+    <string name="plant_details_log_watering">Log Watering</string>
+    <string name="plant_details_care_history">Care History</string>
+    <plurals name="home_plants_count">
+        <item quantity="one">%1$d plant</item>
+        <item quantity="other">%1$d plants</item>
+    </plurals>
+    <plurals name="home_collection_subtitle">
+        <item quantity="one">%1$d plant in your collection</item>
+        <item quantity="other">%1$d plants in your collection</item>
+    </plurals>
+    <plurals name="home_dashboard_collection_label">
+        <item quantity="one">plant in your collection</item>
+        <item quantity="other">plants in your collection</item>
+    </plurals>
 </resources>

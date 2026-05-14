@@ -262,6 +262,7 @@ fun AddPlantScreen(onBack: () -> Unit) {
             val isLoading = uiState is PlantUiState.Loading
             Button(
                 onClick = {
+                    if (isSaving || isLoading) return@Button
                     if (name.isBlank()) {
                         nameError = true
                     } else {
@@ -286,7 +287,7 @@ fun AddPlantScreen(onBack: () -> Unit) {
                     .fillMaxWidth()
                     .height(56.dp)
                     .shadow(8.dp, RoundedCornerShape(18.dp), ambientColor = PlantLeaf.copy(alpha = 0.18f)),
-                enabled = !isLoading && name.isNotBlank(),
+                enabled = !isSaving && !isLoading && name.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PlantLeaf,
                     disabledContainerColor = Color(0xFFB7CDB1),

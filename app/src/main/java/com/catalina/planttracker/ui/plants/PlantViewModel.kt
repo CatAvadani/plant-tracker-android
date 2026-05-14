@@ -57,12 +57,15 @@ class PlantViewModel : ViewModel() {
 
     fun loadPlant(id: Int) {
         viewModelScope.launch {
+            _uiState.value = PlantUiState.Loading
             repository.getPlant(id)
                 .onSuccess { plant ->
                     _selectedPlant.value = plant
+                    _uiState.value = PlantUiState.Idle
                 }
-                .onFailure { 
+                .onFailure { exception ->
                     _selectedPlant.value = null
+                    _uiState.value = PlantUiState.Error(exception.message ?: "Failed to fetch plant")
                 }
         }
     }
@@ -144,6 +147,8 @@ class PlantViewModel : ViewModel() {
                 imageUrl = plant.imageUrl
             ).onSuccess { updated ->
                 _selectedPlant.value = updated
+            }.onFailure { exception ->
+                _uiState.value = PlantUiState.Error(exception.message ?: "Failed to update last watered")
             }
         }
     }
@@ -156,15 +161,12 @@ class PlantViewModel : ViewModel() {
 
     fun uploadImage(uri: Uri, context: Context) {
         viewModelScope.launch {
+            _uploadedImageUrl.value = null
             _uiState.value = PlantUiState.Loading
             repository.uploadImage(uri, context)
                 .onSuccess { url ->
                     _uploadedImageUrl.value = url
-                    // We keep Loading state or move to Idle? 
-                    // Usually we stay in Loading until the actual create/update call finishes
-                    // But if we want to show preview before save, we might need a different state.
-                    // However, the instructions say "Wait for uploadedImageUrl to be non-null".
-                    _uiState.value = PlantUiState.Idle 
+                    _uiState.value = PlantUiState.Idle
                 }
                 .onFailure { exception ->
                     _uiState.value = PlantUiState.Error(exception.message ?: "Failed to upload image")

@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 sealed class CareLogUiState {
     object Idle : CareLogUiState()
     object Loading : CareLogUiState()
-    data class Success(val logs: List<CareLogResponse>) : CareLogUiState()
+    data class Success(val data: List<CareLogResponse>) : CareLogUiState()
     data class Error(val message: String) : CareLogUiState()
 }
 
@@ -42,12 +42,9 @@ class CareLogViewModel : ViewModel() {
 
     fun deleteCareLog(plantId: Int, id: Int) {
         viewModelScope.launch {
-            val error = repository.deleteCareLog(plantId, id)
-            if (error == null) {
-                loadCareLogs(plantId)
-            } else {
-                _careLogUiState.value = CareLogUiState.Error(error)
-            }
+            repository.deleteCareLog(plantId, id)
+                .onSuccess { loadCareLogs(plantId) }
+                .onFailure { e -> _careLogUiState.value = CareLogUiState.Error(e.message ?: "Failed to delete care log") }
         }
     }
 

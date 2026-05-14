@@ -55,11 +55,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.catalina.planttracker.R
 import com.catalina.planttracker.data.model.CareLogEntryType
 import com.catalina.planttracker.data.model.CareLogResponse
 import com.catalina.planttracker.ui.carelogs.CareLogUiState
@@ -81,12 +83,13 @@ fun CareLogScreen(
 ) {
     val viewModel: CareLogViewModel = viewModel(factory = CareLogViewModelFactory())
     val uiState by viewModel.careLogUiState.collectAsStateWithLifecycle()
+    val parsedPlantId = remember(plantId) { plantId.toIntOrNull() }
 
     var showBottomSheet by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
 
-    LaunchedEffect(plantId) {
-        viewModel.loadCareLogs(plantId.toInt())
+    LaunchedEffect(parsedPlantId) {
+        parsedPlantId?.let(viewModel::loadCareLogs)
     }
 
     LaunchedEffect(uiState) {
@@ -112,7 +115,7 @@ fun CareLogScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.action_back),
                             tint = PlantInk
                         )
                     }
@@ -121,12 +124,17 @@ fun CareLogScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showBottomSheet = true },
-                containerColor = PlantLeaf,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add care log")
+            if (parsedPlantId != null) {
+                FloatingActionButton(
+                    onClick = { showBottomSheet = true },
+                    containerColor = PlantLeaf,
+                    contentColor = Color.White
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.care_log_action_add)
+                    )
+                }
             }
         },
         containerColor = PlantBackground
@@ -136,6 +144,20 @@ fun CareLogScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            if (parsedPlantId == null) {
+                Text(
+                    stringResource(R.string.care_log_invalid_plant),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(32.dp),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.error
+                    ),
+                    textAlign = TextAlign.Center
+                )
+                return@Box
+            }
+
             when (val state = uiState) {
                 is CareLogUiState.Loading -> {
                     CircularProgressIndicator(
@@ -144,7 +166,7 @@ fun CareLogScreen(
                     )
                 }
                 is CareLogUiState.Success -> {
-                    if (state.logs.isEmpty()) {
+                    if (state.data.isEmpty()) {
                         Column(
                             modifier = Modifier
                                 .align(Alignment.Center)
@@ -159,7 +181,7 @@ fun CareLogScreen(
                                 tint = PlantMuted.copy(alpha = 0.5f)
                             )
                             Text(
-                                "No care history yet",
+                                stringResource(R.string.care_log_empty_title),
                                 style = MaterialTheme.typography.titleMedium.copy(color = PlantMuted),
                                 textAlign = TextAlign.Center
                             )
@@ -170,10 +192,10 @@ fun CareLogScreen(
                             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(state.logs) { log ->
+                            items(state.data) { log ->
                                 CareLogCard(
                                     log = log,
-                                    onDelete = { viewModel.deleteCareLog(plantId.toInt(), log.id) }
+                                    onDelete = { viewModel.deleteCareLog(parsedPlantId, log.id) }
                                 )
                             }
                         }
@@ -196,12 +218,12 @@ fun CareLogScreen(
         }
     }
 
-    if (showBottomSheet) {
+    if (showBottomSheet && parsedPlantId != null) {
         AddCareLogBottomSheet(
             onDismiss = { showBottomSheet = false },
             onSave = { entryType, notes ->
                 isSubmitting = true
-                viewModel.createCareLog(plantId.toInt(), entryType, notes)
+                viewModel.createCareLog(parsedPlantId, entryType, notes)
             }
         )
     }
@@ -240,7 +262,7 @@ private fun CareLogCard(
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    CareLogEntryType.fromInt(log.entryType).label,
+                    stringResource(CareLogEntryType.fromInt(log.entryType).labelRes),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = PlantInk
@@ -259,7 +281,11 @@ private fun CareLogCard(
                 }
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = PlantMuted)
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.action_delete),
+                    tint = PlantMuted
+                )
             }
         }
     }
@@ -283,7 +309,7 @@ private fun AddCareLogBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Log Care",
+                stringResource(R.string.care_log_sheet_title),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = PlantDeepLeaf
@@ -300,7 +326,7 @@ private fun AddCareLogBottomSheet(
                     FilterChip(
                         selected = selectedType == type,
                         onClick = { selectedType = type },
-                        label = { Text(type.label) },
+                        label = { Text(stringResource(type.labelRes)) },
                         leadingIcon = {
                             Icon(
                                 careLogIcon(type.value),
@@ -316,7 +342,7 @@ private fun AddCareLogBottomSheet(
                 value = notes,
                 onValueChange = { if (it.length <= 1000) notes = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Notes (optional)") },
+                label = { Text(stringResource(R.string.care_log_notes_optional)) },
                 minLines = 3,
                 maxLines = 5
             )
@@ -329,7 +355,7 @@ private fun AddCareLogBottomSheet(
                 colors = ButtonDefaults.buttonColors(containerColor = PlantLeaf),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Save", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge)
             }
         }
     }

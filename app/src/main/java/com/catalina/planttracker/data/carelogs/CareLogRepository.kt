@@ -42,16 +42,16 @@ class CareLogRepository {
         }
     }
 
-    suspend fun deleteCareLog(plantId: Int, id: Int): String? {
+    suspend fun deleteCareLog(plantId: Int, id: Int): Result<Unit> {
         return try {
             val response = api.deleteCareLog(plantId, id)
             if (response.isSuccessful) {
-                null
+                Result.success(Unit)
             } else {
-                responseMessage(response, "Failed to delete care log")
+                Result.failure(Exception(responseMessage(response, "Failed to delete care log")))
             }
         } catch (e: Exception) {
-            e.message ?: "Failed to delete care log"
+            Result.failure(e)
         }
     }
 

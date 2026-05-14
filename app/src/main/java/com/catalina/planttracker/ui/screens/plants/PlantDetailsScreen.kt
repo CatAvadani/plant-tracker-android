@@ -61,12 +61,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.catalina.planttracker.R
+import com.catalina.planttracker.data.model.CareLogEntryType
 import com.catalina.planttracker.model.Plant
 import com.catalina.planttracker.ui.carelogs.CareLogUiState
 import com.catalina.planttracker.ui.carelogs.CareLogViewModel
@@ -110,6 +113,7 @@ fun PlantDetailsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isLogWatering by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val wateringLoggedMessage = stringResource(R.string.plant_details_watering_logged)
 
     LaunchedEffect(plantId) {
         viewModel.loadPlant(plantId)
@@ -126,8 +130,9 @@ fun PlantDetailsScreen(
         if (isLogWatering) {
             when (careLogState) {
                 is CareLogUiState.Success -> {
+                    viewModel.updateLastWatered(plantId)
                     isLogWatering = false
-                    snackbarHostState.showSnackbar("Watering logged!")
+                    snackbarHostState.showSnackbar(wateringLoggedMessage)
                 }
                 is CareLogUiState.Error -> {
                     isLogWatering = false
@@ -212,13 +217,17 @@ fun PlantDetailsScreen(
                         plant = plant,
                         errorMessage = (uiState as? PlantUiState.Error)?.message,
                         deleting = isDeleting,
+                        loggingWatering = isLogWatering,
                         onEdit = { onNavigateToEdit(plantId) },
                         onRequestDelete = { showDeleteDialog = true },
                         onCareHistory = { onNavigateToCareHistory(plant.id, plant.name) },
                         onLogWatering = {
                             isLogWatering = true
-                            careLogViewModel.createCareLog(plantId, 0, null)
-                            viewModel.updateLastWatered(plantId)
+                            careLogViewModel.createCareLog(
+                                plantId,
+                                CareLogEntryType.WATERED.value,
+                                null
+                            )
                         }
                     )
                 }
@@ -244,6 +253,7 @@ private fun PlantDetailsContent(
     plant: Plant,
     errorMessage: String?,
     deleting: Boolean,
+    loggingWatering: Boolean,
     onEdit: () -> Unit,
     onRequestDelete: () -> Unit,
     onCareHistory: () -> Unit,
@@ -374,6 +384,7 @@ private fun PlantDetailsContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),
+            enabled = !loggingWatering,
             colors = ButtonDefaults.buttonColors(containerColor = PlantLeaf),
             shape = RoundedCornerShape(20.dp)
         ) {
@@ -384,7 +395,7 @@ private fun PlantDetailsContent(
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                "Log Watering",
+                stringResource(R.string.plant_details_log_watering),
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
             )
         }
@@ -405,7 +416,7 @@ private fun PlantDetailsContent(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                "Care History",
+                stringResource(R.string.plant_details_care_history),
                 style = MaterialTheme.typography.labelLarge.copy(color = PlantDeepLeaf)
             )
             Spacer(modifier = Modifier.weight(1f))

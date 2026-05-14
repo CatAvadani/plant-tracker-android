@@ -206,7 +206,21 @@ fun EditPlantScreen(
         },
         containerColor = PlantBackground
     ) { innerPadding ->
-        if (selectedPlant == null && !isDataLoaded) {
+        if (uiState is PlantUiState.Error && selectedPlant == null && !isDataLoaded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                ScreenStateCard(
+                    title = "Could not load plant",
+                    message = (uiState as PlantUiState.Error).message,
+                    isError = true
+                )
+            }
+        } else if (selectedPlant == null && !isDataLoaded) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PlantLeaf)
             }
@@ -298,6 +312,7 @@ fun EditPlantScreen(
                 val isLoading = uiState is PlantUiState.Loading
                 Button(
                     onClick = {
+                        if (isSaving || isLoading) return@Button
                         if (name.isBlank()) {
                             nameError = true
                         } else {
@@ -323,7 +338,7 @@ fun EditPlantScreen(
                         .fillMaxWidth()
                         .height(56.dp)
                         .shadow(8.dp, RoundedCornerShape(18.dp), ambientColor = PlantLeaf.copy(alpha = 0.18f)),
-                    enabled = !isLoading && name.isNotBlank(),
+                    enabled = !isSaving && !isLoading && name.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PlantLeaf,
                         disabledContainerColor = Color(0xFFB7CDB1),

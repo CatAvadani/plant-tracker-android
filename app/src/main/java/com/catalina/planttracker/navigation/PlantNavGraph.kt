@@ -157,7 +157,8 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
                 )
             ) { backStackEntry ->
                 val plantId = backStackEntry.arguments?.getString("plantId") ?: return@composable
-                val plantName = backStackEntry.arguments?.getString("plantName") ?: return@composable
+                val plantName = backStackEntry.arguments?.getString("plantName")?.let(Uri::decode)
+                    ?: return@composable
                 CareLogScreen(
                     plantId = plantId,
                     plantName = plantName,

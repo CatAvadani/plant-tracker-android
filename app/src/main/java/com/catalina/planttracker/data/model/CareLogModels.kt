@@ -1,13 +1,16 @@
 package com.catalina.planttracker.data.model
 
-enum class CareLogEntryType(val value: Int, val label: String) {
-    WATERED(0, "Watered"),
-    FERTILIZED(1, "Fertilized"),
-    REPOTTED(2, "Repotted"),
-    PRUNED(3, "Pruned"),
-    TREATED_FOR_PESTS(4, "Treated for Pests"),
-    HEALTH_CHECK(5, "Health Check"),
-    OTHER(6, "Other");
+import androidx.annotation.StringRes
+import com.catalina.planttracker.R
+
+enum class CareLogEntryType(val value: Int, @param:StringRes val labelRes: Int) {
+    WATERED(0, R.string.care_log_type_watered),
+    FERTILIZED(1, R.string.care_log_type_fertilized),
+    REPOTTED(2, R.string.care_log_type_repotted),
+    PRUNED(3, R.string.care_log_type_pruned),
+    TREATED_FOR_PESTS(4, R.string.care_log_type_treated_for_pests),
+    HEALTH_CHECK(5, R.string.care_log_type_health_check),
+    OTHER(6, R.string.care_log_type_other);
 
     companion object {
         fun fromInt(value: Int) = entries.firstOrNull { it.value == value } ?: OTHER
