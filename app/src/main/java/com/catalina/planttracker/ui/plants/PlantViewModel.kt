@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 sealed class PlantUiState {
     object Idle : PlantUiState()
@@ -122,6 +125,26 @@ class PlantViewModel : ViewModel() {
                 .onFailure { exception ->
                     _uiState.value = PlantUiState.Error(exception.message ?: "Failed to delete plant")
                 }
+        }
+    }
+
+    fun updateLastWatered(id: Int) {
+        viewModelScope.launch {
+            val plant = _selectedPlant.value ?: return@launch
+            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            repository.updatePlant(
+                id = id,
+                name = plant.name,
+                species = plant.species,
+                location = plant.location,
+                wateringFrequencyDays = plant.wateringFrequencyDays,
+                lastWatered = today,
+                healthStatus = plant.healthStatus,
+                notes = plant.notes,
+                imageUrl = plant.imageUrl
+            ).onSuccess { updated ->
+                _selectedPlant.value = updated
+            }
         }
     }
 

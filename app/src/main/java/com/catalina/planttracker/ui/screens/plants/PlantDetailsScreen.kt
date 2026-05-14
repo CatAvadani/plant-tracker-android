@@ -19,11 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EventRepeat
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.WaterDrop
@@ -38,6 +40,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -64,13 +68,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.catalina.planttracker.model.Plant
+import com.catalina.planttracker.ui.carelogs.CareLogUiState
+import com.catalina.planttracker.ui.carelogs.CareLogViewModel
+import com.catalina.planttracker.ui.carelogs.CareLogViewModelFactory
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCream
 import com.catalina.planttracker.ui.components.PlantDeepLeaf
+import com.catalina.planttracker.ui.components.PlantGold
 import com.catalina.planttracker.ui.components.PlantInk
 import com.catalina.planttracker.ui.components.PlantLeaf
 import com.catalina.planttracker.ui.components.PlantMint
 import com.catalina.planttracker.ui.components.PlantMuted
+import com.catalina.planttracker.ui.components.PlantRed
 import com.catalina.planttracker.ui.components.PlantStatusChip
 import com.catalina.planttracker.ui.components.ScreenStateCard
 import com.catalina.planttracker.ui.components.SectionHeader
@@ -78,20 +87,29 @@ import com.catalina.planttracker.ui.components.plantStatusColor
 import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlantDetailsScreen(
     plantId: Int,
     onBack: () -> Unit,
-    onNavigateToEdit: (Int) -> Unit
+    onNavigateToEdit: (Int) -> Unit,
+    onNavigateToCareHistory: (Int, String) -> Unit
 ) {
     val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
     val selectedPlant by viewModel.selectedPlant.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val careLogViewModel: CareLogViewModel = viewModel(factory = CareLogViewModelFactory())
+    val careLogState by careLogViewModel.careLogUiState.collectAsStateWithLifecycle()
+
     var isDeleting by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isLogWatering by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(plantId) {
         viewModel.loadPlant(plantId)
@@ -101,6 +119,21 @@ fun PlantDetailsScreen(
         if (isDeleting && uiState is PlantUiState.Success) {
             onBack()
             viewModel.resetState()
+        }
+    }
+
+    LaunchedEffect(careLogState) {
+        if (isLogWatering) {
+            when (careLogState) {
+                is CareLogUiState.Success -> {
+                    isLogWatering = false
+                    snackbarHostState.showSnackbar("Watering logged!")
+                }
+                is CareLogUiState.Error -> {
+                    isLogWatering = false
+                }
+                else -> {}
+            }
         }
     }
 
@@ -141,6 +174,7 @@ fun PlantDetailsScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = PlantBackground
     ) { innerPadding ->
         val plant = selectedPlant
@@ -179,7 +213,13 @@ fun PlantDetailsScreen(
                         errorMessage = (uiState as? PlantUiState.Error)?.message,
                         deleting = isDeleting,
                         onEdit = { onNavigateToEdit(plantId) },
-                        onRequestDelete = { showDeleteDialog = true }
+                        onRequestDelete = { showDeleteDialog = true },
+                        onCareHistory = { onNavigateToCareHistory(plant.id, plant.name) },
+                        onLogWatering = {
+                            isLogWatering = true
+                            careLogViewModel.createCareLog(plantId, 0, null)
+                            viewModel.updateLastWatered(plantId)
+                        }
                     )
                 }
             }
@@ -205,7 +245,9 @@ private fun PlantDetailsContent(
     errorMessage: String?,
     deleting: Boolean,
     onEdit: () -> Unit,
-    onRequestDelete: () -> Unit
+    onRequestDelete: () -> Unit,
+    onCareHistory: () -> Unit,
+    onLogWatering: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -216,12 +258,14 @@ private fun PlantDetailsContent(
     ) {
         PlantHero(plant)
 
+        // Stat cards
+        val due = dueInfo(plant.lastWatered, plant.wateringFrequencyDays)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             DetailStatCard(
-                label = "Water",
+                label = "Frequency",
                 value = plant.wateringFrequencyDays?.let { "${it}d" } ?: "-",
                 icon = Icons.Default.WaterDrop,
                 modifier = Modifier.weight(1f),
@@ -234,8 +278,8 @@ private fun PlantDetailsContent(
                 label = "Health",
                 value = when (plant.healthStatus) {
                     0 -> "Good"
-                    1 -> "Care"
-                    2 -> "Critical"
+                    1 -> "Fair"
+                    2 -> "Poor"
                     else -> "-"
                 },
                 icon = Icons.Default.Eco,
@@ -244,12 +288,12 @@ private fun PlantDetailsContent(
                 containerColor = plantStatusContainerColor(plant.healthStatus)
             )
             DetailStatCard(
-                label = "Last",
-                value = formatDate(plant.lastWatered),
+                label = "Due",
+                value = due.value,
                 icon = Icons.Default.EventRepeat,
                 modifier = Modifier.weight(1f),
-                tint = PlantLeaf,
-                containerColor = PlantMint
+                tint = due.tint,
+                containerColor = due.containerColor
             )
         }
 
@@ -277,7 +321,11 @@ private fun PlantDetailsContent(
                     "Watering frequency",
                     plant.wateringFrequencyDays?.let { "Every $it days" } ?: "Not set"
                 )
-                DetailRow(Icons.Default.WaterDrop, "Last watered", formatFullDate(plant.lastWatered))
+                DetailRow(
+                    Icons.Default.WaterDrop,
+                    "Last watered",
+                    formatFullDate(plant.lastWatered)
+                )
             }
         }
 
@@ -320,6 +368,55 @@ private fun PlantDetailsContent(
             }
         }
 
+        // Care log actions
+        Button(
+            onClick = onLogWatering,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PlantLeaf),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Icon(
+                Icons.Default.WaterDrop,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                "Log Watering",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
+            )
+        }
+
+        OutlinedButton(
+            onClick = onCareHistory,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.dp, PlantLeaf.copy(alpha = 0.4f))
+        ) {
+            Icon(
+                Icons.Default.History,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = PlantDeepLeaf
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Care History",
+                style = MaterialTheme.typography.labelLarge.copy(color = PlantDeepLeaf)
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = PlantMuted
+            )
+        }
+
         if (errorMessage != null) {
             ScreenStateCard(
                 title = if (deleting) "Could not delete plant" else "Plant action failed",
@@ -354,7 +451,7 @@ private fun PlantDetailsContent(
             ) {
                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (deleting) "Deleting" else "Delete")
+                Text(if (deleting) "Deleting…" else "Delete")
             }
         }
 
@@ -501,15 +598,6 @@ private fun DetailStatCard(
     }
 }
 
-private fun plantStatusContainerColor(healthStatus: Int?): Color {
-    return when (healthStatus) {
-        0 -> Color(0xFFDFF2DE)
-        1 -> Color(0xFFFFF2B8)
-        2 -> Color(0xFFFFE2DE)
-        else -> PlantMint
-    }
-}
-
 @Composable
 private fun DetailRow(icon: ImageVector, label: String, value: String) {
     Row(
@@ -567,12 +655,47 @@ private fun DeletePlantDialog(
     )
 }
 
-private fun formatDate(value: String?): String {
-    if (value.isNullOrBlank()) return "Never"
-    return value.substringBefore("T").substringAfterLast("-")
+// — Helpers —
+
+private data class DueInfo(val value: String, val tint: Color, val containerColor: Color)
+
+private fun dueInfo(lastWatered: String?, frequencyDays: Int?): DueInfo {
+    if (lastWatered.isNullOrBlank() || frequencyDays == null) {
+        return DueInfo("-", PlantMuted, PlantMint)
+    }
+    return try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val last = sdf.parse(lastWatered.substringBefore("T")) ?: return DueInfo("-", PlantMuted, PlantMint)
+        val todayStr = sdf.format(Date())
+        val today = sdf.parse(todayStr) ?: return DueInfo("-", PlantMuted, PlantMint)
+        val daysSince = ((today.time - last.time) / (1000L * 60 * 60 * 24)).toInt()
+        val daysLeft = frequencyDays - daysSince
+        when {
+            daysLeft < 0 -> DueInfo("${-daysLeft}d late", PlantRed, Color(0xFFFFE2DE))
+            daysLeft == 0 -> DueInfo("Today!", PlantGold, Color(0xFFFFF2B8))
+            daysLeft <= 3 -> DueInfo("${daysLeft}d", PlantGold, Color(0xFFFFF9E6))
+            else -> DueInfo("${daysLeft}d", PlantLeaf, PlantMint)
+        }
+    } catch (e: Exception) {
+        DueInfo("-", PlantMuted, PlantMint)
+    }
 }
 
 private fun formatFullDate(value: String?): String {
     if (value.isNullOrBlank()) return "Never"
-    return value.substringBefore("T")
+    return try {
+        val input = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val output = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
+        val date = input.parse(value.substringBefore("T")) ?: return value.substringBefore("T")
+        output.format(date)
+    } catch (e: Exception) {
+        value.substringBefore("T")
+    }
+}
+
+private fun plantStatusContainerColor(healthStatus: Int?): Color = when (healthStatus) {
+    0 -> Color(0xFFDFF2DE)
+    1 -> Color(0xFFFFF2B8)
+    2 -> Color(0xFFFFE2DE)
+    else -> PlantMint
 }

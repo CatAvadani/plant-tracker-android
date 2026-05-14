@@ -61,4 +61,8 @@ object RetrofitInstance {
         retrofit?.create(PlantApiService::class.java) ?: throw IllegalStateException("Retrofit not initialized. Call getRetrofit(context) first.")
     }
     val plantApi: PlantApiService get() = _plantApi.value
+
+    val careLogApi: CareLogApiService by lazy {
+        retrofit?.create(CareLogApiService::class.java) ?: throw IllegalStateException("Retrofit not initialized. Call getRetrofit(context) first.")
+    }
 }
