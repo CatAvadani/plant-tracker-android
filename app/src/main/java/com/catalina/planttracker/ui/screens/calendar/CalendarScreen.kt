@@ -97,7 +97,7 @@ fun ReminderItem(plant: com.catalina.planttracker.model.Plant) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = plant.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(text = "Schedule: ${plant.nextWatering}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(text = "Last Watered: ${plant.lastWatered ?: "Never"}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
             IconButton(onClick = {}) {
                 Icon(Icons.Default.Notifications, contentDescription = "Remind Me", tint = Color.Gray)

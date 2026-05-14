@@ -16,12 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.catalina.planttracker.model.HealthStatus
 import com.catalina.planttracker.model.fakePlants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlantDetailsScreen(plantName: String?, onBack: () -> Unit) {
     val plant = fakePlants.find { it.name == plantName } ?: fakePlants[0]
+    val health = HealthStatus.fromInt(plant.healthStatus ?: 0)
 
     Scaffold(
         topBar = {
@@ -73,28 +75,17 @@ fun PlantDetailsScreen(plantName: String?, onBack: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DetailRow("Species", plant.species)
-                    DetailRow("Status", plant.status)
-                    DetailRow("Location", plant.location)
-                    DetailRow("Watering Frequency", plant.wateringFrequency)
-                    DetailRow("Next Water", plant.nextWatering)
-                    DetailRow("Last Watered", plant.lastWatered)
+                    DetailRow("Species", plant.species ?: "Unknown")
+                    DetailRow("Health Status", health.name.replace("_", " ").lowercase().capitalize())
+                    DetailRow("Location", plant.location ?: "Unknown")
+                    DetailRow("Watering Frequency", "${plant.wateringFrequencyDays ?: 0} days")
+                    DetailRow("Last Watered", plant.lastWatered ?: "Never")
                 }
             }
 
             // Notes Section
             Text(text = "Notes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-            Text(text = plant.notes, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-
-            // Care Tips
-            Text(text = "Care Tips", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-            plant.careTips.forEach { tip ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(6.dp).background(Color(0xFF2E7D32), RoundedCornerShape(3.dp)))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = tip, style = MaterialTheme.typography.bodySmall)
-                }
-            }
+            Text(text = plant.notes ?: "No notes available.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
 
             Spacer(modifier = Modifier.height(24.dp))
 
