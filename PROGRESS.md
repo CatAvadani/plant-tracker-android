@@ -1,7 +1,15 @@
 # Plant Tracker Android - Progress Summary
 
 ## Project Overview
-A modern, calm plant care application built with Jetpack Compose and Material 3. The project is currently in **Phase 2: Networking & Auth**, focusing on connecting the app to the .NET Web API and implementing real user authentication.
+Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Material 3. The project is currently in **Phase 3: Plants CRUD**. Authentication and plant management are connected to the deployed .NET API.
+
+## Current Status
+- **Authentication**: Real login/register API calls are implemented.
+- **Session handling**: JWT token and generated API key are stored securely and checked on splash.
+- **Main app UI**: Home, Plants, Calendar, Settings, Plant Details, Add Plant, and Edit Plant (placeholder) screens exist.
+- **Plant CRUD**: Full CRUD (Create, Read, Update, Delete) is implemented and connected to the backend API.
+- **Recent focus**: Connected plant screens to backend API, implemented Plant CRUD, refactored models for API alignment, improved health status UI with accessibility considerations, and standardized repository error handling with `Result`.
+- **Backend alignment**: Route casing fixes and display name persistence still need backend updates/redeployment.
 
 ## Technical Stack
 - **Language**: Kotlin
@@ -9,100 +17,92 @@ A modern, calm plant care application built with Jetpack Compose and Material 3.
 - **Design System**: Material 3
 - **Navigation**: Navigation Compose
 - **Icons**: Material Icons Extended
-- **Networking**: Retrofit 2 & OkHttp 4
+- **Networking**: Retrofit 2 and OkHttp 4
 - **Image Loading**: Coil Compose
-- **Security**: AndroidX Security Crypto
-- **Architecture**: MVVM with Repository pattern.
+- **Security**: AndroidX Security Crypto with encrypted shared preferences
+- **Concurrency**: Kotlin Coroutines
+- **Architecture**: MVVM with Repository pattern
 
 ## Completed Tasks
 
 ### 1. Architecture & Structure
-- Created a clean, scalable folder structure:
-  - `data/`: Local and network data handling.
-  - `model/`: Shared data models.
-  - `navigation/`: Routing definitions and NavGraph setup.
-  - `ui/components/`: Reusable UI elements (Cards, Nav Bars, States).
-  - `ui/screens/`: Feature-based screen organization (Auth, Home, Plants, Calendar, Settings).
+- Created a feature-oriented app structure:
+  - `data/`: Auth and Plant repositories, local token storage, network configuration, and API services.
+  - `model/`: Shared plant and auth models.
+  - `navigation/`: Route definitions, bottom-nav metadata, and `NavHost` setup.
+  - `ui/components/`: Shared UI components for plant cards, bottom navigation, loading, and state handling.
+  - `ui/screens/`: Auth, Home, Plants, Calendar, Settings, and secondary plant screens.
 
 ### 2. Navigation Flow
-- Implemented a complete navigation lifecycle:
-  - **Splash Screen**: 1-second delay with session check (auto-login if token exists).
-  - **Authentication**: Login and Register screens with real API integration and state management.
-  - **Main App**: Home, Plants, Calendar, and Settings accessible via a Persistent Bottom Navigation Bar.
-  - **Secondary Navigation**: Deep linking to Plant Details and Add Plant forms.
+- Implemented app startup through `SplashScreen`.
+- Splash checks for both JWT token and API key before routing to Home.
+- Login routes to Home on successful authentication.
+- Register routes back to Login on successful account creation.
+- Settings logout clears local session data before navigating to Login.
+- Bottom navigation supports Home, Plants, Calendar, and Settings.
+- Secondary navigation supports Plant Details, Add Plant, and Edit Plant screens.
 
-### 3. Features & Screens
-- **Dashboard (Home)**: Summary cards for plant health and watering status, plus a vertical collection list.
-- **Plant Library**: A dedicated list view of all tracked plants.
-- **Plant Details**: Deep-dive view for individual plants showing care tips, location, frequency, and care actions.
-- **Add Plant Form**: Static form UI with fields for name, species, frequency, and notes, including placeholder image upload.
-- **Watering Calendar**: Schedule view with upcoming watering reminders.
-- **Settings & Profile**: User profile card, notification/dark mode toggles, and logout functionality.
+### 3. Authentication & Session Management
+- Added `AuthApiService` for register, login, and API key generation.
+- Added `AuthRepository` for authentication workflows.
+- Added `AuthViewModel` with `Idle`, `Loading`, `Success`, and `Error` auth states.
+- Added `TokenManager` using encrypted shared preferences for:
+  - JWT token
+  - API key
+  - user email
+  - display name
+- Added `AuthInterceptor` to attach JWT and API key to authenticated requests.
+- Login/register requests trim email input before submission.
+- Backend error responses are parsed so UI can show messages such as `Invalid email or password.` instead of only HTTP codes.
+- Logout clears encrypted preferences on `Dispatchers.IO`, then navigates after clearing completes.
 
-### 4. UI/UX & Components
-- **Calm Green Theme**: Consistent use of soft greens (`#F1F8E9`, `#2E7D32`) and rounded Material 3 cards.
-- **Reusable States**: `EmptyState` and `LoadingState` components for consistent feedback.
-- **Input Handling**: Added basic form validation UI and specialized keyboard types for email/password.
+### 4. Plant CRUD & Networking
+- Implemented `PlantApiService` for full plant lifecycle management.
+- Implemented `PlantRepository` with standardized `Result<T>` error handling.
+- Implemented `PlantViewModel` to manage plant-related UI states (Idle, Loading, Success, Error).
+- Connected `HomeScreen`, `PlantsScreen`, `PlantDetailsScreen`, and `AddPlantScreen` to real API data.
+- Implemented Delete plant functionality with proper feedback and navigation.
+- Aligned `CreatePlantRequest` and `UpdatePlantRequest` with .NET API DTOs.
+- `UpdatePlantRequest` supports partial updates with nullable fields.
+- Improved `RetrofitInstance` with safer lazy initialization and explicit initialization in `MainActivity`.
 
-### 5. Infrastructure & Networking Setup
-- Added **Retrofit** and **OkHttp** for API integration.
-- Implemented **AuthInterceptor** for JWT and API Key authentication.
-- Created **RetrofitInstance** singleton with logging and timeout configurations.
-- Implemented **TokenManager** using **EncryptedSharedPreferences** for secure storage of sensitive data.
-- Created **AuthApiService** and **AuthModels** for login, register, and API key generation.
-- Implemented **AuthRepository** and **AuthViewModel** to handle authentication logic and user info storage.
-- Connected **LoginScreen** and **RegisterScreen** to real API calls with state management (Idle, Loading, Success, Error).
-- Added **Coil** for efficient asynchronous image loading from URLs.
-- Added **Coroutines** for background task management.
+### 5. Main Screens & UI
+- **Home**: Real-time statistics (total, healthy, needs attention) and filtered list of plants needing care.
+- **Plants**: Full library list from API.
+- **Plant Details**: Comprehensive detail view with real data, including Coil image loading and delete action.
+- **Add Plant**: Reactive form for plant creation with validation and loading states.
+- **Edit Plant**: Added navigation route and placeholder screen for plant updates.
+- **Calendar**: Watering schedule placeholder (still uses some sample data).
+- **Settings**: Profile summary, preference toggles, and secure logout.
+- **Health Status**: Standardized 0-2 integer mapping with improved color contrast for accessibility (Green, Gold, Red).
 
-## Project Structure
-```text
-app/src/main/java/com/catalina/planttracker/
-├── data/
-│   ├── auth/
-│   │   └── AuthRepository.kt
-│   ├── local/
-│   │   └── TokenManager.kt
-│   ├── model/
-│   │   └── AuthModels.kt
-│   └── network/
-│       ├── ApiConfig.kt
-│       ├── AuthApiService.kt
-│       ├── AuthInterceptor.kt
-│       └── RetrofitInstance.kt
-├── model/
-│   └── Plant.kt            # Data class and fakePlants list
-├── navigation/
-│   ├── Screen.kt           # Route definitions
-│   └── PlantNavGraph.kt    # Navigation Host setup
-├── ui/
-│   ├── auth/
-│   │   └── AuthViewModel.kt
-│   ├── components/
-│   │   ├── BottomNavigationBar.kt
-│   │   ├── PlantComponents.kt
-│   │   └── StateComponents.kt
-│   └── screens/
-│       ├── auth/
-│       │   ├── SplashScreen.kt
-│       │   ├── LoginScreen.kt
-│       │   └── RegisterScreen.kt
-│       ├── home/
-│       │   └── HomeScreen.kt
-│       ├── plants/
-│       │   ├── PlantsScreen.kt
-│       │   ├── PlantDetailsScreen.kt
-│       │   └── AddPlantScreen.kt
-│       ├── calendar/
-│       │   └── CalendarScreen.kt
-│       └── settings/
-│           └── SettingsScreen.kt
-└── MainActivity.kt         # App Entry point
-```
+### 6. Infrastructure & Build
+- Added Retrofit, Gson converter, OkHttp, and logging interceptor.
+- Added timeouts in `RetrofitInstance`.
+- Added Coil dependency for remote image loading.
+- Added AndroidX Security Crypto for local sensitive data.
+- Project builds successfully.
 
-## Next Steps (Phase 3: Plants CRUD)
-- Create **PlantApiService** and **PlantRepository**.
-- Implement **PlantViewModel** to fetch and manage plants.
-- Connect **PlantsScreen** and **PlantDetailsScreen** to real API data.
-- Implement **AddPlantScreen** with real API submission.
-- Add real **Image Picking** and upload capability (Phase 4).
+## Known Limitations
+- Watering calendar still needs connection to real reminder/history data.
+- Backend route casing fixes are still in progress and require Railway redeployment.
+- New registrations currently persist `NULL` display names until the backend display name mapping is fixed.
+- Edit Profile and Privacy Policy rows in Settings are placeholders.
+- Dark Mode toggle is UI-only and does not yet change the app theme.
+- Notifications toggle is UI-only and does not yet schedule reminders.
+- Settings user info is read from local storage when the screen is composed; it is not reactive to profile edits yet.
+
+## Next Steps
+
+### Phase 4: Images & Reminders
+- Add real image picking.
+- Add image upload support using `POST /api/plants/image`.
+- Connect watering calendar to real reminder data.
+- Implement local notifications or backend-driven reminders.
+
+### Phase 5: Profile & Preferences
+- Implement Edit Profile flow using `PATCH /api/users/me`.
+- Make user profile data reactive.
+- Add token refresh support using `POST /api/auth/refresh`.
+- Persist theme preference.
+- Implement notification preference persistence.

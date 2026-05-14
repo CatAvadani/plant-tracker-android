@@ -7,34 +7,73 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.catalina.planttracker.model.fakePlants
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.catalina.planttracker.ui.plants.PlantUiState
+import com.catalina.planttracker.ui.plants.PlantViewModel
+import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlantDetailsScreen(plantName: String?, onBack: () -> Unit) {
-    val plant = fakePlants.find { it.name == plantName } ?: fakePlants[0]
+fun PlantDetailsScreen(plantId: Int, onBack: () -> Unit, onNavigateToEdit: (Int) -> Unit) {
+    val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
+    val selectedPlant by viewModel.selectedPlant.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(plantId) {
+        viewModel.loadPlant(plantId)
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState is PlantUiState.Success && selectedPlant == null) {
+            // This assumes Success after delete means we can go back
+            // but we need to be careful as Success is also for loadPlants
+            // Better to check if we were in Loading and then Success
+        }
+    }
+    
+    // Improved navigation after delete
+    var isDeleting by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState) {
+        if (isDeleting && uiState is PlantUiState.Success) {
+            onBack()
+            viewModel.resetState()
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(plant.name) },
+                title = { Text(selectedPlant?.name ?: "Plant Details") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Edit */ }) {
+                    IconButton(onClick = { onNavigateToEdit(plantId) }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    }
+                    IconButton(
+                        onClick = {
+                            isDeleting = true
+                            viewModel.deletePlant(plantId)
+                        },
+                        enabled = uiState !is PlantUiState.Loading
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -42,78 +81,81 @@ fun PlantDetailsScreen(plantName: String?, onBack: () -> Unit) {
         },
         containerColor = Color(0xFFF1F8E9)
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Placeholder for Plant Image
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .background(Color(0xFFC8E6C9), RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.WaterDrop,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = Color(0xFF2E7D32)
+        Column(modifier = Modifier.padding(innerPadding)) {
+            if (uiState is PlantUiState.Error) {
+                Text(
+                    text = (uiState as PlantUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp)
                 )
             }
 
-            // Info Section
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DetailRow("Species", plant.species)
-                    DetailRow("Status", plant.status)
-                    DetailRow("Location", plant.location)
-                    DetailRow("Watering Frequency", plant.wateringFrequency)
-                    DetailRow("Next Water", plant.nextWatering)
-                    DetailRow("Last Watered", plant.lastWatered)
+            val plant = selectedPlant
+            if (plant == null || uiState is PlantUiState.Loading && !isDeleting) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF2E7D32))
                 }
-            }
-
-            // Notes Section
-            Text(text = "Notes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-            Text(text = plant.notes, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-
-            // Care Tips
-            Text(text = "Care Tips", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-            plant.careTips.forEach { tip ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(6.dp).background(Color(0xFF2E7D32), RoundedCornerShape(3.dp)))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = tip, style = MaterialTheme.typography.bodySmall)
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                // Plant Image
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFC8E6C9))
+                ) {
+                    if (plant.imageUrl != null) {
+                        AsyncImage(
+                            model = plant.imageUrl,
+                            contentDescription = plant.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.WaterDrop,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = Color(0xFF2E7D32)
+                            )
+                        }
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // Info Section
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        DetailRow("Species", plant.species ?: "Unknown")
+                        DetailRow("Health Status", when(plant.healthStatus) {
+                            0 -> "Healthy"
+                            1 -> "Needs Attention"
+                            2 -> "Critical"
+                            else -> "Unknown"
+                        })
+                        DetailRow("Location", plant.location ?: "Unknown")
+                        DetailRow("Watering Frequency", "${plant.wateringFrequencyDays ?: 0} days")
+                        DetailRow("Last Watered", plant.lastWatered ?: "Never")
+                    }
+                }
 
-            // Action Buttons
-            Button(
-                onClick = { /* Water Now */ },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("Water Now")
-            }
+                // Notes Section
+                Text(text = "Notes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
+                Text(text = plant.notes ?: "No notes available.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
 
-            OutlinedButton(
-                onClick = { /* Care Log */ },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("View Care Log", color = Color(0xFF2E7D32))
+                Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }

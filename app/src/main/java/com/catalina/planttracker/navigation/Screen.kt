@@ -20,8 +20,9 @@ sealed class Screen(val route: String, val title: String = "", val icon: ImageVe
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
 
     // Secondary Screens
-    object PlantDetails : Screen("plant_details/{plantName}", "Plant Details")
+    object PlantDetails : Screen("plant_details/{plantId}", "Plant Details")
     object AddPlant : Screen("add_plant", "Add Plant")
+    object EditPlant : Screen("edit_plant/{plantId}", "Edit Plant")
 }
 
 val bottomNavItems = listOf(

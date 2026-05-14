@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.catalina.planttracker.model.HealthStatus
 import com.catalina.planttracker.model.Plant
 
 @Composable
@@ -55,34 +56,47 @@ fun PlantCard(plant: Plant, modifier: Modifier = Modifier, onClick: () -> Unit =
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Text(
-                    text = plant.species,
+                    text = plant.species ?: "Unknown Species",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                val healthInt = plant.healthStatus
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val statusColor = when(healthInt) {
+                        0 -> Color(0xFF2E7D32) // Darker Green for better contrast
+                        1 -> Color(0xFFC49000) // Darker Yellow/Gold
+                        2 -> Color(0xFFB71C1C) // Darker Red
+                        else -> Color.Gray
+                    }
+                    val statusText = when(healthInt) {
+                        0 -> "Healthy"
+                        1 -> "Needs Attention"
+                        2 -> "Critical"
+                        else -> "Unknown"
+                    }
                     Icon(
                         imageVector = Icons.Default.WaterDrop,
                         contentDescription = null,
-                        tint = if (plant.status == "Needs Water") Color(0xFF1976D2) else Color(0xFF4CAF50),
+                        tint = statusColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = plant.status,
+                        text = statusText,
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (plant.status == "Needs Water") Color(0xFF1976D2) else Color(0xFF4CAF50)
+                        color = statusColor
                     )
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "Next Water",
+                    text = "Location",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray
                 )
                 Text(
-                    text = plant.nextWatering,
+                    text = plant.location ?: "Unknown",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = Color(0xFF2E7D32)
                 )

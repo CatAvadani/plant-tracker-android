@@ -1,7 +1,10 @@
 package com.catalina.planttracker.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -81,13 +84,13 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
             // Main App Graph
             composable(Screen.Home.route) { 
                 HomeScreen(
-                    onPlantClick = { name -> navController.navigate("plant_details/$name") },
+                    onPlantClick = { id -> navController.navigate("plant_details/$id") },
                     onAddPlantClick = { navController.navigate(Screen.AddPlant.route) }
                 ) 
             }
             composable(Screen.Plants.route) { 
                 PlantsScreen(
-                    onPlantClick = { name -> navController.navigate("plant_details/$name") },
+                    onPlantClick = { id -> navController.navigate("plant_details/$id") },
                     onAddPlantClick = { navController.navigate(Screen.AddPlant.route) }
                 ) 
             }
@@ -103,10 +106,29 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
             // Secondary Screens
             composable(
                 route = Screen.PlantDetails.route,
-                arguments = listOf(navArgument("plantName") { type = NavType.StringType })
+                arguments = listOf(navArgument("plantId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val plantName = backStackEntry.arguments?.getString("plantName")
-                PlantDetailsScreen(plantName = plantName, onBack = { navController.popBackStack() })
+                val plantIdStr = backStackEntry.arguments?.getString("plantId") ?: return@composable
+                val plantId = plantIdStr.toIntOrNull() ?: return@composable
+
+                PlantDetailsScreen(
+                    plantId = plantId,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToEdit = { id -> navController.navigate("edit_plant/$id") }
+                )
+            }
+
+            composable(
+                route = Screen.EditPlant.route,
+                arguments = listOf(navArgument("plantId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val plantIdStr = backStackEntry.arguments?.getString("plantId") ?: return@composable
+                val plantId = plantIdStr.toIntOrNull() ?: return@composable
+
+                // Placeholder for EditPlantScreen
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    Text("Edit Plant Screen (ID: $plantId) - Coming Soon")
+                }
             }
 
             composable(Screen.AddPlant.route) {
