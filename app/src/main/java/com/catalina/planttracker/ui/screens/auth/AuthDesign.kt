@@ -162,7 +162,7 @@ internal fun AuthBrandHeader(compact: Boolean = false) {
         PlantCareMark(compact = compact)
         Spacer(modifier = Modifier.height(if (compact) 10.dp else 18.dp))
         Text(
-            text = "Plant Tracker",
+            text = "Leaf Care",
             style = if (compact) {
                 MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = AuthDeepLeaf)
             } else {
