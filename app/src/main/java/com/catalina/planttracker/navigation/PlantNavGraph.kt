@@ -21,6 +21,7 @@ import com.catalina.planttracker.ui.screens.auth.SplashScreen
 import com.catalina.planttracker.ui.screens.calendar.CalendarScreen
 import com.catalina.planttracker.ui.screens.home.HomeScreen
 import com.catalina.planttracker.ui.screens.plants.AddPlantScreen
+import com.catalina.planttracker.ui.screens.plants.EditPlantScreen
 import com.catalina.planttracker.ui.screens.plants.PlantDetailsScreen
 import com.catalina.planttracker.ui.screens.plants.PlantsScreen
 import com.catalina.planttracker.ui.screens.settings.SettingsScreen
@@ -122,13 +123,11 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
                 route = Screen.EditPlant.route,
                 arguments = listOf(navArgument("plantId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val plantIdStr = backStackEntry.arguments?.getString("plantId") ?: return@composable
-                val plantId = plantIdStr.toIntOrNull() ?: return@composable
-
-                // Placeholder for EditPlantScreen
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    Text("Edit Plant Screen (ID: $plantId) - Coming Soon")
-                }
+                val plantId = backStackEntry.arguments?.getString("plantId") ?: return@composable
+                EditPlantScreen(
+                    plantId = plantId,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             composable(Screen.AddPlant.route) {
