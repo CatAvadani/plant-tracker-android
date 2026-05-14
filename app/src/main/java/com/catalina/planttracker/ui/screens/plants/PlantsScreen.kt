@@ -1,5 +1,6 @@
 package com.catalina.planttracker.ui.screens.plants
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -41,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,6 +53,7 @@ import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCard
 import com.catalina.planttracker.ui.components.PlantCream
 import com.catalina.planttracker.ui.components.PlantDeepLeaf
+import com.catalina.planttracker.ui.components.PlantInk
 import com.catalina.planttracker.ui.components.PlantLeaf
 import com.catalina.planttracker.ui.components.PlantLine
 import com.catalina.planttracker.ui.components.PlantMint
@@ -141,46 +146,55 @@ fun PlantsScreen(
                         .filterByStatus(selectedFilter)
                         .filterByQuery(query)
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        item {
-                            PlantsLibraryControls(
-                                totalCount = currentState.plants.size,
-                                query = query,
-                                onQueryChange = { query = it },
-                                selectedFilter = selectedFilter,
-                                onFilterChange = { selectedFilter = it }
-                            )
-                        }
-
-                        item {
-                            SectionHeader(
-                                title = "Collection",
-                                subtitle = "Search and filter your plants",
-                                trailing = "${filteredPlants.size} shown"
-                            )
-                        }
-
-                        if (filteredPlants.isEmpty()) {
+                    if (currentState.plants.isEmpty()) {
+                        EmptyPlantLibrary(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 34.dp)
+                                .padding(bottom = 86.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
                             item {
-                                ScreenStateCard(
-                                    title = "No plants found",
-                                    message = "Try a different search or filter.",
-                                    icon = Icons.Default.Search
+                                PlantsLibraryControls(
+                                    totalCount = currentState.plants.size,
+                                    query = query,
+                                    onQueryChange = { query = it },
+                                    selectedFilter = selectedFilter,
+                                    onFilterChange = { selectedFilter = it }
                                 )
                             }
-                        } else {
-                            items(filteredPlants) { plant ->
-                                PlantCard(plant, onClick = { onPlantClick(plant.id) })
-                            }
-                        }
 
-                        item {
-                            Spacer(modifier = Modifier.height(86.dp))
+                            item {
+                                SectionHeader(
+                                    title = "Collection",
+                                    subtitle = "Search and filter your plants",
+                                    trailing = "${filteredPlants.size} shown"
+                                )
+                            }
+
+                            if (filteredPlants.isEmpty()) {
+                                item {
+                                    ScreenStateCard(
+                                        title = "No plants found",
+                                        message = "Try a different search or filter.",
+                                        icon = Icons.Default.Search
+                                    )
+                                }
+                            } else {
+                                items(filteredPlants) { plant ->
+                                    PlantCard(plant, onClick = { onPlantClick(plant.id) })
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(86.dp))
+                            }
                         }
                     }
                 }
@@ -188,6 +202,51 @@ fun PlantsScreen(
                 else -> {}
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyPlantLibrary(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterVertically)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(104.dp)
+                .background(Color.White.copy(alpha = 0.78f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(78.dp)
+                    .background(PlantMint, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = null,
+                    tint = PlantLeaf,
+                    modifier = Modifier.size(42.dp)
+                )
+            }
+        }
+
+        Text(
+            text = "Your library is empty",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = PlantInk
+            ),
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "Tap the add button to start your collection and keep each plant's care in one place.",
+            style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted),
+            textAlign = TextAlign.Center
+        )
     }
 }
 

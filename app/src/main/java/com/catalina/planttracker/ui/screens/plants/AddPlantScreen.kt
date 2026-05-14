@@ -78,13 +78,14 @@ import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
 private data class HealthChoice(
     val value: Int,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val containerColor: Color
 )
 
 private val healthChoices = listOf(
-    HealthChoice(0, Icons.Default.Eco),
-    HealthChoice(1, Icons.Default.WarningAmber),
-    HealthChoice(2, Icons.Default.WarningAmber)
+    HealthChoice(0, Icons.Default.Eco, PlantLeaf),
+    HealthChoice(1, Icons.Default.WarningAmber, Color(0xFFFFF2B8)),
+    HealthChoice(2, Icons.Default.WarningAmber, Color(0xFFFFE2DE))
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -234,7 +235,8 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(56.dp)
+                    .shadow(8.dp, RoundedCornerShape(18.dp), ambientColor = PlantLeaf.copy(alpha = 0.18f)),
                 enabled = !isLoading && name.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PlantLeaf,
@@ -269,7 +271,9 @@ fun AddPlantScreen(onBack: () -> Unit) {
 @Composable
 private fun AddPlantHero() {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -399,28 +403,46 @@ private fun HealthStatusSelector(
             healthChoices.forEach { choice ->
                 val selectedChoice = selected == choice.value
                 val color = plantStatusColor(choice.value)
+                val selectedContainerColor = when (choice.value) {
+                    0 -> PlantLeaf
+                    1 -> Color(0xFFC49000)
+                    2 -> Color(0xFFB71C1C)
+                    else -> PlantLeaf
+                }
+                val tileColor = if (selectedChoice) selectedContainerColor else choice.containerColor
+                val contentColor = if (selectedChoice) Color.White else color
+                val labelColor = if (selectedChoice) Color.White else color
                 Surface(
                     modifier = Modifier
                         .weight(1f)
+                        .height(104.dp)
+                        .shadow(7.dp, RoundedCornerShape(20.dp), ambientColor = color.copy(alpha = 0.08f))
                         .clickable { onSelected(choice.value) },
-                    shape = RoundedCornerShape(18.dp),
-                    color = if (selectedChoice) color else PlantMint
+                    shape = RoundedCornerShape(20.dp),
+                    color = tileColor
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.Start,
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(
-                            imageVector = choice.icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = if (selectedChoice) Color.White else color
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(Color.White.copy(alpha = 0.62f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = choice.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(19.dp),
+                                tint = contentColor
+                            )
+                        }
                         Text(
                             text = plantStatusLabel(choice.value),
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = if (selectedChoice) Color.White else color,
+                                color = labelColor,
                                 fontWeight = FontWeight.Bold
                             ),
                             maxLines = 2
