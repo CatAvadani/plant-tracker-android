@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,21 +30,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.catalina.planttracker.model.Plant
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCard
 import com.catalina.planttracker.ui.components.PlantCream
@@ -52,11 +52,14 @@ import com.catalina.planttracker.ui.components.PlantInk
 import com.catalina.planttracker.ui.components.PlantLeaf
 import com.catalina.planttracker.ui.components.PlantMint
 import com.catalina.planttracker.ui.components.PlantMuted
+import com.catalina.planttracker.ui.components.PlantRed
+import com.catalina.planttracker.ui.components.PlantGold
 import com.catalina.planttracker.ui.components.ScreenStateCard
 import com.catalina.planttracker.ui.components.SectionHeader
 import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,20 +72,6 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "My Plants",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = PlantDeepLeaf
-                        )
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddPlantClick,
@@ -152,10 +141,19 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                        .padding(innerPadding),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 24.dp,
+                        bottom = 100.dp
+                    )
                 ) {
+                    item {
+                        HomeGreetingHeader(total = plants.size)
+                    }
+
                     item {
                         HomeDashboardPanel(
                             total = plants.size,
@@ -175,31 +173,7 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 
                     if (needsAttentionPlants.isEmpty()) {
                         item {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(18.dp),
-                                color = Color(0xFFE5F4E5)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = PlantLeaf,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        text = "All clear — every plant is healthy",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = PlantDeepLeaf,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    )
-                                }
-                            }
+                            AllClearBanner()
                         }
                     } else {
                         items(needsAttentionPlants) { plant ->
@@ -217,8 +191,6 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                     items(plants.sortedByDescending { it.id }.take(3)) { plant ->
                         PlantCard(plant, onClick = { onPlantClick(plant.id) })
                     }
-
-                    item { Spacer(modifier = Modifier.height(86.dp)) }
                 }
             }
 
@@ -228,46 +200,42 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 }
 
 @Composable
-private fun EmptyHomeState() {
+private fun HomeGreetingHeader(total: Int) {
+    val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 0..11 -> "Good morning"
+        in 12..16 -> "Good afternoon"
+        else -> "Good evening"
+    }
+    val subtitle = when {
+        total == 0 -> "Start building your garden"
+        total == 1 -> "1 plant in your collection"
+        else -> "$total plants in your collection"
+    }
+
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 72.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(104.dp)
-                .background(Color.White.copy(alpha = 0.78f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(78.dp)
-                    .background(PlantMint, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Eco,
-                    contentDescription = null,
-                    tint = PlantLeaf,
-                    modifier = Modifier.size(42.dp)
-                )
-            }
-        }
         Text(
-            text = "No plants yet",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-                color = PlantInk
+            text = greeting,
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = PlantMuted,
+                fontWeight = FontWeight.Medium
             )
         )
         Text(
-            text = "Tap the + button to add your first plant and start tracking care.",
-            style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted),
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            text = "My Garden",
+            style = MaterialTheme.typography.headlineLarge.copy(
+                color = PlantDeepLeaf,
+                fontWeight = FontWeight.ExtraBold
+            )
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = PlantMuted,
+                fontWeight = FontWeight.Normal
+            )
         )
     }
 }
@@ -306,7 +274,6 @@ private fun HomeDashboardPanel(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Compact header: total count + live badge
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -401,7 +368,6 @@ private fun HomeDashboardPanel(
     }
 }
 
-
 @Composable
 private fun MetricPill(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -444,8 +410,82 @@ private fun MetricPill(
                     color = labelColor,
                     fontWeight = FontWeight.SemiBold
                 ),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Composable
+private fun AllClearBanner() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = PlantMint.copy(alpha = 0.6f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = PlantLeaf,
+                modifier = Modifier.size(22.dp)
+            )
+            Text(
+                text = "All clear — every plant is healthy",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = PlantDeepLeaf,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyHomeState() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 72.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .background(Color.White.copy(alpha = 0.78f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .background(PlantMint, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = null,
+                    tint = PlantLeaf,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+        }
+        Text(
+            text = "No plants yet",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = PlantInk
+            )
+        )
+        Text(
+            text = "Tap the + button to add your first plant and start tracking care.",
+            style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted),
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
     }
 }
