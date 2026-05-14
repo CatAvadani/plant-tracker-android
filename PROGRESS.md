@@ -8,7 +8,7 @@ Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Ma
 - **Session handling**: JWT token and generated API key are stored securely and checked on splash.
 - **Main app UI**: Home, Plants, Calendar, Settings, Plant Details, Add Plant, and Edit Plant (placeholder) screens exist.
 - **Plant CRUD**: Full CRUD (Create, Read, Update, Delete) is implemented and connected to the backend API.
-- **Recent focus**: Connected plant screens to backend API, implemented Plant CRUD, refactored models for API alignment, improved health status UI with accessibility considerations, and standardized repository error handling with `Result`.
+- **Recent focus**: Completed a broad UI refresh for auth, main plant screens, settings, add/detail flows, launcher branding, password visibility, loading states, and plant list caching.
 
 ## Technical Stack
 - **Language**: Kotlin
@@ -54,6 +54,7 @@ Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Ma
 - Login/register requests trim email input before submission.
 - Backend error responses are parsed so UI can show messages such as `Invalid email or password.` instead of only HTTP codes.
 - Logout clears encrypted preferences on `Dispatchers.IO`, then navigates after clearing completes.
+- Login/Register password fields include show/hide visibility toggles.
 
 ### 4. Plant CRUD & Networking
 - Implemented `PlantApiService` for full plant lifecycle management.
@@ -61,19 +62,23 @@ Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Ma
 - Implemented `PlantViewModel` to manage plant-related UI states (Idle, Loading, Success, Error).
 - Connected `HomeScreen`, `PlantsScreen`, `PlantDetailsScreen`, and `AddPlantScreen` to real API data.
 - Implemented Delete plant functionality with proper feedback and navigation.
+- Added in-memory plant list caching so Home, Plants, and Calendar can reuse existing data instead of showing a full loading state on every tab switch.
+- Plant API error bodies are parsed and surfaced in UI, including plain-text backend messages such as `Authenticated user missing.`.
 - Aligned `CreatePlantRequest` and `UpdatePlantRequest` with .NET API DTOs.
 - `UpdatePlantRequest` supports partial updates with nullable fields.
 - Improved `RetrofitInstance` with safer lazy initialization and explicit initialization in `MainActivity`.
 
 ### 5. Main Screens & UI
-- **Home**: Real-time statistics (total, healthy, needs attention) and filtered list of plants needing care.
-- **Plants**: Full library list from API.
-- **Plant Details**: Comprehensive detail view with real data, including Coil image loading and delete action.
-- **Add Plant**: Reactive form for plant creation with validation and loading states.
+- **Home**: Redesigned dashboard with hero summary, stats, care queue, recently added plants, and cleaner empty/error/loading states.
+- **Plants**: Redesigned library with search, health filters, richer plant cards, and empty/error/loading states.
+- **Plant Details**: Redesigned detail view with hero image, health overlay, care stat cards, notes card, edit/delete actions, and delete confirmation.
+- **Add Plant**: Redesigned form with photo placeholder, styled fields, health-status selector, validation, loading, and error states.
 - **Edit Plant**: Added navigation route and placeholder screen for plant updates.
-- **Calendar**: Watering schedule placeholder (still uses some sample data).
-- **Settings**: Profile summary, preference toggles, and secure logout.
+- **Calendar**: Redesigned care schedule screen using plant data where available, with a weekly visual placeholder until real reminders are connected.
+- **Settings**: Redesigned profile/settings screen with profile card, preference rows, account rows, and secure logout.
 - **Health Status**: Standardized 0-2 integer mapping with improved color contrast for accessibility (Green, Gold, Red).
+- **Launcher Icon**: Replaced the default Android launcher icon with a custom leaf/water adaptive icon matching the app brand.
+- **Shared Plant UI**: Expanded `PlantComponents.kt` with shared colors, plant cards, stat tiles, section headers, status chips, and screen state components.
 
 ### 6. Infrastructure & Build
 - Added Retrofit, Gson converter, OkHttp, and logging interceptor.
@@ -83,6 +88,7 @@ Plant Tracker Android is a calm plant-care app built with Jetpack Compose and Ma
 - Project builds successfully.
 
 ## Known Limitations
+- Current backend can return `401 Authenticated user missing` for `/api/plants`; this appears to be an auth/backend claim or API key association issue, not a UI issue.
 - Watering calendar still needs connection to real reminder/history data.
 - Edit Profile and Privacy Policy rows in Settings are placeholders.
 - Dark Mode toggle is UI-only and does not yet change the app theme.

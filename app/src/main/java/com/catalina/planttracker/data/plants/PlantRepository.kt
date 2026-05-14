@@ -12,11 +12,19 @@ class PlantRepository {
     private val api get() = RetrofitInstance.plantApi
     private val gson = Gson()
 
+    companion object {
+        private var cachedPlants: List<Plant>? = null
+    }
+
+    fun getCachedPlants(): List<Plant>? = cachedPlants
+
     suspend fun getPlants(): Result<List<Plant>> {
         return try {
             val response = api.getPlants()
             if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
+                val plants = response.body() ?: emptyList()
+                cachedPlants = plants
+                Result.success(plants)
             } else {
                 Result.failure(Exception(responseMessage(response, "Failed to fetch plants")))
             }
@@ -61,7 +69,9 @@ class PlantRepository {
             )
             val response = api.createPlant(request)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val plant = response.body()!!
+                cachedPlants = cachedPlants?.let { current -> current + plant }
+                Result.success(plant)
             } else {
                 Result.failure(Exception(responseMessage(response, "Failed to create plant")))
             }
@@ -94,7 +104,11 @@ class PlantRepository {
             )
             val response = api.updatePlant(id, request)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val plant = response.body()!!
+                cachedPlants = cachedPlants?.map { current ->
+                    if (current.id == id) plant else current
+                }
+                Result.success(plant)
             } else {
                 Result.failure(Exception(responseMessage(response, "Failed to update plant")))
             }
@@ -107,6 +121,7 @@ class PlantRepository {
         return try {
             val response = api.deletePlant(id)
             if (response.isSuccessful) {
+                cachedPlants = cachedPlants?.filterNot { it.id == id }
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(responseMessage(response, "Failed to delete plant")))
