@@ -163,17 +163,23 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                 val forgottenPlants = plants
                     .filter { plant ->
                         plant.healthStatus != 1 && plant.healthStatus != 2 &&
+                        plant.lastWatered != null &&
                         daysSince(plant.lastWatered) >= 14
                     }
                     .sortedByDescending { daysSince(it.lastWatered) }
                     .take(5)
 
                 val todayCareTasks = plants.filter { plant ->
-                    plant.healthStatus == 0 && (
-                        (plant.lastWatered == null) ||
-                        (plant.wateringFrequencyDays != null &&
-                         daysSince(plant.lastWatered) >= plant.wateringFrequencyDays)
-                    )
+                    val daysSinceWatered = daysSince(plant.lastWatered)
+                    plant.healthStatus == 0 &&
+                        (
+                            plant.lastWatered == null ||
+                                (
+                                    plant.wateringFrequencyDays != null &&
+                                        daysSinceWatered >= plant.wateringFrequencyDays &&
+                                        daysSinceWatered < 14
+                                )
+                        )
                 }
 
                 if (plants.isEmpty()) {
