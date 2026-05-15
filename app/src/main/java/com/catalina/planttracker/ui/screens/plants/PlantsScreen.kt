@@ -170,12 +170,15 @@ fun PlantsScreen(
                     } else {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp),
+                            modifier = Modifier.fillMaxSize(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 100.dp)
+                            contentPadding = PaddingValues(
+                                start = 8.dp,
+                                end = 8.dp,
+                                top = 8.dp,
+                                bottom = 80.dp
+                            )
                         ) {
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 PlantsLibraryControls(
@@ -301,7 +304,7 @@ private fun PlantGridCard(plant: Plant, onClick: () -> Unit) {
             ) {
                 Text(
                     text = plant.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    style = MaterialTheme.typography.titleSmall.copy(
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     ),
