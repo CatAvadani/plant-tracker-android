@@ -89,7 +89,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 32.dp),
+                    .padding(horizontal = 4.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(28.dp))
@@ -280,7 +280,7 @@ private fun AuthTabSwitcher(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(50.dp),
-        color = Color(0xFFD8E0D3)
+        color = Color(0xFFDFECDA)
     ) {
         Row(modifier = Modifier.padding(4.dp)) {
             AuthTabButton(
