@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,16 +13,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -41,16 +47,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.catalina.planttracker.R
 import com.catalina.planttracker.model.Plant
+import com.catalina.planttracker.notifications.WateringReminderScheduler
 import com.catalina.planttracker.ui.components.PlantBackground
-import com.catalina.planttracker.ui.components.PlantCard
 import com.catalina.planttracker.ui.components.PlantCream
 import com.catalina.planttracker.ui.components.PlantDeepLeaf
 import com.catalina.planttracker.ui.components.PlantInk
@@ -64,11 +77,11 @@ import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
-private enum class PlantFilter(val label: String) {
-    ALL("All"),
-    HEALTHY("Healthy"),
-    CARE("Care"),
-    CRITICAL("Critical")
+private enum class PlantFilter(@param:StringRes val labelRes: Int) {
+    ALL(R.string.plants_filter_all),
+    HEALTHY(R.string.plants_filter_healthy),
+    CARE(R.string.plants_filter_care),
+    CRITICAL(R.string.plants_filter_critical)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,6 +92,7 @@ fun PlantsScreen(
     viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf(PlantFilter.ALL) }
 
@@ -142,6 +156,9 @@ fun PlantsScreen(
                 }
 
                 is PlantUiState.Success -> {
+                    LaunchedEffect(currentState.plants) {
+                        WateringReminderScheduler.scheduleForPlants(context, currentState.plants)
+                    }
                     val filteredPlants = currentState.plants
                         .filterByStatus(selectedFilter)
                         .filterByQuery(query)
@@ -154,13 +171,19 @@ fun PlantsScreen(
                                 .padding(bottom = 86.dp)
                         )
                     } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 20.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(
+                                start = 8.dp,
+                                end = 8.dp,
+                                top = 8.dp,
+                                bottom = 80.dp
+                            )
                         ) {
-                            item {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
                                 PlantsLibraryControls(
                                     totalCount = currentState.plants.size,
                                     query = query,
@@ -170,7 +193,7 @@ fun PlantsScreen(
                                 )
                             }
 
-                            item {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
                                 SectionHeader(
                                     title = "Collection",
                                     subtitle = "Search and filter your plants",
@@ -179,7 +202,7 @@ fun PlantsScreen(
                             }
 
                             if (filteredPlants.isEmpty()) {
-                                item {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
                                     ScreenStateCard(
                                         title = "No plants found",
                                         message = "Try a different search or filter.",
@@ -188,18 +211,117 @@ fun PlantsScreen(
                                 }
                             } else {
                                 items(filteredPlants) { plant ->
-                                    PlantCard(plant, onClick = { onPlantClick(plant.id) })
+                                    PlantGridCard(
+                                        plant = plant,
+                                        onClick = { onPlantClick(plant.id) }
+                                    )
                                 }
-                            }
-
-                            item {
-                                Spacer(modifier = Modifier.height(86.dp))
                             }
                         }
                     }
                 }
 
                 else -> {}
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlantGridCard(plant: Plant, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (!plant.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = plant.imageUrl,
+                    contentDescription = plant.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(PlantLeaf),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Eco,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
+            )
+
+            val (badgeColor, badgeText) = when (plant.healthStatus) {
+                0 -> PlantLeaf to stringResource(R.string.plants_status_healthy)
+                1 -> Color(0xFFFFA000) to stringResource(R.string.plants_status_care)
+                2 -> Color(0xFFE53935) to stringResource(R.string.plants_status_critical)
+                else -> PlantMuted to stringResource(R.string.plants_status_unknown)
+            }
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp),
+                shape = RoundedCornerShape(50.dp),
+                color = badgeColor.copy(alpha = 0.92f)
+            ) {
+                Text(
+                    text = badgeText,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = plant.name,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                plant.wateringFrequencyDays?.let { days ->
+                    Text(
+                        text = stringResource(R.string.plants_frequency_days_short, days),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    )
+                }
             }
         }
     }
@@ -320,7 +442,7 @@ private fun PlantsLibraryControls(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PlantFilter.entries.forEach { filter ->
                         FilterPill(
-                            label = filter.label,
+                            label = stringResource(filter.labelRes),
                             selected = selectedFilter == filter,
                             onClick = { onFilterChange(filter) }
                         )

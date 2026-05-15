@@ -56,6 +56,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.catalina.planttracker.data.notifications.NotificationPreferenceManager
+import com.catalina.planttracker.data.plants.PlantRepository
+import com.catalina.planttracker.notifications.WateringReminderScheduler
 import com.catalina.planttracker.ui.auth.AuthViewModel
 import com.catalina.planttracker.ui.auth.AuthViewModelFactory
 
@@ -72,11 +75,14 @@ private val SettingsCream = Color(0xFFFFFCF3)
 fun SettingsScreen(onLogout: () -> Unit) {
     val context = LocalContext.current
     val viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context))
+    val notificationPreferences = remember { NotificationPreferenceManager(context) }
 
     val user = remember { viewModel.getUser() }
 
     var darkMode by remember { mutableStateOf(false) }
-    var notifications by remember { mutableStateOf(true) }
+    var notifications by remember {
+        mutableStateOf(notificationPreferences.areWateringNotificationsEnabled())
+    }
 
     Scaffold(
         topBar = {
@@ -123,7 +129,18 @@ fun SettingsScreen(onLogout: () -> Unit) {
                     title = "Notifications",
                     subtitle = "Watering and care reminders",
                     checked = notifications,
-                    onCheckedChange = { notifications = it }
+                    onCheckedChange = { enabled ->
+                        notifications = enabled
+                        notificationPreferences.setWateringNotificationsEnabled(enabled)
+                        if (enabled) {
+                            WateringReminderScheduler.scheduleForPlants(
+                                context,
+                                PlantRepository().getCachedPlants().orEmpty()
+                            )
+                        } else {
+                            WateringReminderScheduler.cancelStoredReminders(context)
+                        }
+                    }
                 )
             }
 

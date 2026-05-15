@@ -1,6 +1,7 @@
 package com.catalina.planttracker.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,8 +19,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,12 +36,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +54,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.catalina.planttracker.R
+import com.catalina.planttracker.data.model.CareLogEntryType
+import com.catalina.planttracker.model.Plant
+import com.catalina.planttracker.notifications.WateringReminderScheduler
+import com.catalina.planttracker.ui.carelogs.CareLogViewModel
+import com.catalina.planttracker.ui.carelogs.CareLogViewModelFactory
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCard
 import com.catalina.planttracker.ui.components.PlantCream
@@ -64,13 +78,16 @@ import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
     val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
+    val careLogViewModel: CareLogViewModel = viewModel(factory = CareLogViewModelFactory())
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.loadPlants()
@@ -127,6 +144,9 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 
             is PlantUiState.Success -> {
                 val plants = state.plants
+                LaunchedEffect(plants) {
+                    WateringReminderScheduler.scheduleForPlants(context, plants)
+                }
                 val needsAttentionPlants = plants
                     .filter { it.healthStatus == 1 || it.healthStatus == 2 }
                     .sortedByDescending { it.healthStatus ?: 0 }
@@ -136,7 +156,7 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                 val today = Calendar.getInstance().time
                 val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 fun daysSince(dateStr: String?): Int {
-                    val date = dateStr?.let { runCatching { sdf.parse(it) }.getOrNull() }
+                    val date = dateStr?.let { runCatching { sdf.parse(it.substringBefore("T")) }.getOrNull() }
                         ?: return Int.MAX_VALUE
                     return ((today.time - date.time) / (1000L * 60 * 60 * 24)).toInt()
                 }
@@ -147,6 +167,14 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                     }
                     .sortedByDescending { daysSince(it.lastWatered) }
                     .take(5)
+
+                val todayCareTasks = plants.filter { plant ->
+                    plant.healthStatus == 0 && (
+                        (plant.lastWatered == null) ||
+                        (plant.wateringFrequencyDays != null &&
+                         daysSince(plant.lastWatered) >= plant.wateringFrequencyDays)
+                    )
+                }
 
                 if (plants.isEmpty()) {
                     Box(
@@ -175,6 +203,15 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
                 ) {
                     item {
                         HomeGreetingHeader(total = plants.size)
+                    }
+
+                    item {
+                        TodayCareSection(
+                            tasks = todayCareTasks,
+                            plantViewModel = viewModel,
+                            careLogViewModel = careLogViewModel,
+                            onPlantClick = onPlantClick
+                        )
                     }
 
                     item {
@@ -234,6 +271,170 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
             }
 
             else -> {}
+        }
+    }
+}
+
+@Composable
+private fun TodayCareSection(
+    tasks: List<Plant>,
+    plantViewModel: PlantViewModel,
+    careLogViewModel: CareLogViewModel,
+    onPlantClick: (Int) -> Unit
+) {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val todayStr = sdf.format(Date())
+    var recentlyTappedIds by remember { mutableStateOf(setOf<Int>()) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(
+            title = stringResource(R.string.home_today_care_title),
+            trailing = "${tasks.size}"
+        )
+
+        if (tasks.isEmpty()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                color = PlantMint.copy(alpha = 0.6f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = PlantLeaf,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.home_today_care_all_clear),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = PlantDeepLeaf,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                tasks.forEach { plant ->
+                    val isAnimating = recentlyTappedIds.contains(plant.id)
+                    TodayCareTaskRow(
+                        plant = plant,
+                        isAnimating = isAnimating,
+                        onClick = { onPlantClick(plant.id) },
+                        onWater = {
+                            if (!recentlyTappedIds.contains(plant.id)) {
+                                recentlyTappedIds = recentlyTappedIds + plant.id
+                                careLogViewModel.createCareLog(
+                                    plant.id,
+                                    CareLogEntryType.WATERED.value,
+                                    null
+                                )
+                                plantViewModel.updatePlant(
+                                    id = plant.id,
+                                    name = plant.name,
+                                    species = plant.species,
+                                    location = plant.location,
+                                    wateringFrequencyDays = plant.wateringFrequencyDays,
+                                    lastWatered = todayStr,
+                                    healthStatus = plant.healthStatus,
+                                    notes = plant.notes,
+                                    imageUrl = plant.imageUrl
+                                )
+                                plantViewModel.loadPlants()
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayCareTaskRow(
+    plant: Plant,
+    isAnimating: Boolean,
+    onClick: () -> Unit,
+    onWater: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !isAnimating, onClick = onWater),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier.size(36.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isAnimating) Icons.Default.Check else Icons.Default.WaterDrop,
+                    contentDescription = null,
+                    tint = if (isAnimating) PlantLeaf else PlantLeaf.copy(alpha = 0.7f),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = plant.name,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        color = PlantInk,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    maxLines = 1
+                )
+                plant.location?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = PlantMuted
+                        ),
+                        maxLines = 1
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(PlantMint)
+                    .clickable(onClick = onClick),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!plant.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = plant.imageUrl,
+                        contentDescription = plant.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Eco,
+                        contentDescription = null,
+                        tint = PlantLeaf,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -398,7 +599,7 @@ private fun HomeDashboardPanel(
                         label = stringResource(R.string.home_metric_total),
                         value = total,
                         icon = Icons.Default.Eco,
-                        color = PlantLeaf,
+                        color = Color.White,
                         containerColor = PlantLeaf,
                         valueColor = Color.White,
                         labelColor = Color.White.copy(alpha = 0.82f),
@@ -421,24 +622,36 @@ private fun MetricPill(
     labelColor: Color = PlantMuted,
     modifier: Modifier = Modifier
 ) {
+    val iconTint = when {
+        color == Color.White && containerColor == PlantLeaf -> PlantLeaf
+        color == Color.White -> PlantInk
+        else -> color
+    }
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         color = containerColor
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(vertical = 10.dp, horizontal = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(20.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .background(Color.White.copy(alpha = 0.85f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
             Text(
                 text = value.toString(),
                 style = MaterialTheme.typography.headlineSmall.copy(

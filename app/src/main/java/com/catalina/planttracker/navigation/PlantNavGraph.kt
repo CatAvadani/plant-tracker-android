@@ -19,7 +19,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.catalina.planttracker.ui.components.BottomNavigationBar
 import com.catalina.planttracker.ui.screens.auth.LoginScreen
-import com.catalina.planttracker.ui.screens.auth.RegisterScreen
 import com.catalina.planttracker.ui.screens.auth.SplashScreen
 import com.catalina.planttracker.ui.screens.calendar.CalendarScreen
 import com.catalina.planttracker.ui.screens.carelogs.CareLogScreen
@@ -77,19 +76,6 @@ fun PlantNavGraph(navController: NavHostController = rememberNavController()) {
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
-                    },
-                    onNavigateToRegister = {
-                        navController.navigate(Screen.Register.route)
-                    }
-                )
-            }
-            composable(Screen.Register.route) {
-                RegisterScreen(
-                    onRegisterSuccess = {
-                        navController.popBackStack(Screen.Login.route, inclusive = false)
-                    },
-                    onNavigateToLogin = {
-                        navController.navigate(Screen.Login.route)
                     }
                 )
             }

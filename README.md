@@ -9,37 +9,50 @@ The app is fully integrated with a .NET Web API for secure data persistence and 
 - **Authentication**: Secure Login and Registration flow with JWT-based session management.
 - **Dashboard (Home)**: Summary of garden health, quick statistics, and a "Needs Attention" queue for plants requiring immediate care.
 - **Plant Library**: A comprehensive list of all tracked plants with search and status filtering.
-- **Plant Details**: In-depth view for each plant including species, location, watering frequency, and notes.
+- **Plant Details**: In-depth view for each plant including species, location, watering frequency, notes, and care history.
 - **Plant Management (CRUD)**: Full Create, Read, Update, and Delete operations for plants.
+- **Image Upload**: Pick and upload plant photos via multipart requests.
+- **Care Logs**: Track watering, fertilizing, pruning, and other care activities per plant.
 - **Watering Calendar**: A visual schedule for upcoming watering tasks.
+- **Watering Reminders**: Local notifications powered by `AlarmManager` to remind users when plants need water. Reminders are automatically restored after device reboot.
+- **Notification Preferences**: Toggle reminders on or off.
 - **Secure Storage**: Sensitive information like JWT tokens and API keys are stored using `EncryptedSharedPreferences`.
 - **Responsive UI**: Built entirely with Jetpack Compose for a smooth and modern user experience.
 
 ## Tech Stack
 
 - **UI**: Jetpack Compose, Material 3
-- **Navigation**: Navigation Compose (type-safe routing)
+- **Navigation**: Navigation Compose
 - **Architecture**: MVVM (Model-View-ViewModel) with Repository pattern
 - **Networking**: Retrofit 2, OkHttp 4
 - **Image Loading**: Coil Compose
 - **Concurrency**: Kotlin Coroutines & Flow
-- **Security**: AndroidX Security Crypto
-- **Local Storage**: EncryptedSharedPreferences (Token Management)
+- **Security**: AndroidX Security Crypto (`EncryptedSharedPreferences`)
+- **Notifications**: AlarmManager, BroadcastReceiver, NotificationManagerCompat
+- **Local Storage**: EncryptedSharedPreferences (Token Management), plain SharedPreferences (Notification settings)
 
 ## Project Structure
 
 ```text
 app/src/main/java/com/catalina/planttracker/
-├── data/           # Data layer (Repositories, API Services, Token Manager)
-├── model/          # Domain & Network Models
-├── navigation/     # Navigation Graph & Route definitions
-├── ui/
-│   ├── auth/       # Auth ViewModels
-│   ├── plants/     # Plant ViewModels
-│   ├── components/ # Reusable UI components
-│   ├── screens/    # Feature-specific screens (Home, Auth, Plants, etc.)
-│   └── theme/      # Material 3 Theme definitions
-└── MainActivity.kt # Entry point
+├── data/                    # Data layer (Repositories, API Services, Models)
+│   ├── auth/                # Auth repository
+│   ├── carelogs/            # Care log repository
+│   ├── local/               # Token Manager (EncryptedSharedPreferences)
+│   ├── model/               # DTOs for API payloads
+│   ├── network/             # Retrofit setup, API services, AuthInterceptor
+│   ├── notifications/       # Notification preference manager
+│   └── plants/              # Plant repository
+├── model/                   # Domain models
+├── navigation/              # Navigation Graph & Route definitions
+├── notifications/           # Alarm scheduling, reminder receiver, boot receiver
+└── ui/
+    ├── auth/                # Auth ViewModels
+    ├── carelogs/            # Care log ViewModel
+    ├── plants/              # Plant ViewModels
+    ├── components/          # Reusable UI components
+    ├── screens/             # Feature-specific screens (Home, Auth, Plants, Settings, etc.)
+    └── theme/               # Material 3 Theme definitions
 ```
 
 ## Getting Started
@@ -76,8 +89,9 @@ app/src/main/java/com/catalina/planttracker/
 
 ## Roadmap
 
-- [ ] **Phase 4: Images & Reminders**: Real image picking, multipart upload support, and local notifications for watering.
-- [ ] **Phase 5: Profile & Preferences**: Reactive profile edits, theme persistence, and notification settings.
+- [x] **Phase 3: Plants CRUD** — Complete plant management wired to the live API.
+- [~] **Phase 4: Images & Reminders** — Real image picking, multipart upload support, and local notifications for watering (partially complete; calendar connection to real reminders in progress).
+- [ ] **Phase 5: Profile & Preferences** — Reactive profile edits, theme persistence, token refresh, and full notification settings.
 
 ## License
 

@@ -1,3 +1,4 @@
+<!-- From: /Users/catalinaavadani/AndroidStudioProjects/PlantTrackerAndroid/AGENTS.md -->
 # Leaf Care — Agent Guide
 
 This file contains project-specific context for AI coding agents working on the Leaf Care Android application. Leaf Care is a plant tracking and care management app built with Jetpack Compose and Material 3, backed by a .NET Web API.
@@ -12,7 +13,7 @@ This file contains project-specific context for AI coding agents working on the 
 - **UI Framework**: Jetpack Compose with Material 3
 - **Build System**: Gradle with Kotlin DSL (`build.gradle.kts`)
 - **Backend**: .NET Web API deployed on Railway (`https://planttracker-production-54c4.up.railway.app/`)
-- **Current Phase**: Phase 3 — Plants CRUD (authentication and plant management are fully wired to the live API)
+- **Current Phase**: Phase 3–4 — Plants CRUD is complete, image upload and local watering reminders are implemented.
 
 ---
 
@@ -27,6 +28,7 @@ This file contains project-specific context for AI coding agents working on the 
 | Image Loading | Coil Compose 2.7.0 |
 | Concurrency | Kotlin Coroutines 1.11.0, Flow |
 | Security | AndroidX Security Crypto 1.1.0 (EncryptedSharedPreferences) |
+| Notifications | AlarmManager, BroadcastReceiver, NotificationManagerCompat |
 | Testing | JUnit 4, AndroidX Test, Espresso, Compose UI Test |
 
 ---
@@ -62,31 +64,36 @@ All commands assume you are in the project root (`PlantTrackerAndroid/`).
 
 ```
 app/src/main/java/com/catalina/planttracker/
-├── MainActivity.kt              # Entry point; initializes Retrofit and sets Compose content
+├── MainActivity.kt              # Entry point; initializes Retrofit, requests notification permission, sets Compose content
 ├── data/
 │   ├── auth/AuthRepository.kt
 │   ├── carelogs/CareLogRepository.kt
-│   ├── local/TokenManager.kt    # EncryptedSharedPreferences wrapper
+│   ├── local/TokenManager.kt    # EncryptedSharedPreferences wrapper (JWT, API key, user info)
 │   ├── model/                   # DTOs: AuthModels, CareLogModels, PlantModels
 │   ├── network/                 # ApiConfig, RetrofitInstance, AuthInterceptor, API services
+│   ├── notifications/NotificationPreferenceManager.kt
 │   └── plants/PlantRepository.kt
-├── model/Plant.kt               # Domain model
+├── model/Plant.kt               # Domain model + HealthStatus enum + fakePlants fixture data
 ├── navigation/
 │   ├── PlantNavGraph.kt         # Single NavHost with all routes and bottom-bar logic
 │   └── Screen.kt                # Sealed class of all screen routes + bottomNavItems list
-├── ui/
-│   ├── auth/AuthViewModel.kt
-│   ├── carelogs/CareLogViewModel.kt
-│   ├── plants/PlantViewModel.kt
-│   ├── components/              # Reusable Composables: BottomNavigationBar, PlantComponents, StateComponents
-│   ├── screens/                 # Feature screens grouped by folder
-│   │   ├── auth/
-│   │   ├── calendar/
-│   │   ├── carelogs/
-│   │   ├── home/
-│   │   ├── plants/
-│   │   └── settings/
-│   └── theme/                   # Color.kt, Theme.kt, Type.kt (LeafCareTheme)
+├── notifications/
+│   ├── BootCompletedReceiver.kt         # Restores watering reminders after reboot
+│   ├── WateringReminderReceiver.kt      # Displays notification when alarm fires
+│   └── WateringReminderScheduler.kt     # AlarmManager scheduling logic
+└── ui/
+    ├── auth/AuthViewModel.kt
+    ├── carelogs/CareLogViewModel.kt
+    ├── plants/PlantViewModel.kt
+    ├── components/              # Reusable Composables: BottomNavigationBar, PlantComponents, StateComponents
+    ├── screens/                 # Feature screens grouped by folder
+    │   ├── auth/                # SplashScreen, LoginScreen, RegisterScreen, AuthDesign.kt
+    │   ├── calendar/CalendarScreen.kt
+    │   ├── carelogs/CareLogScreen.kt
+    │   ├── home/HomeScreen.kt
+    │   ├── plants/              # PlantsScreen, AddPlantScreen, EditPlantScreen, PlantDetailsScreen
+    │   └── settings/SettingsScreen.kt
+    └── theme/                   # Color.kt, Theme.kt, Type.kt (LeafCareTheme)
 ```
 
 ---
@@ -126,6 +133,7 @@ Follow these conventions to stay consistent with the existing codebase:
 - **Auth Interceptor**: `AuthInterceptor` attaches `Authorization: Bearer <JWT>` and `X-Api-Key` headers to all non-auth requests. On `401`, it clears the session and emits a `sessionExpired` event that triggers navigation to Login.
 - **Token Manager**: `TokenManager` uses `EncryptedSharedPreferences` (AES256_GCM) to store the JWT token, API key, user email, and display name.
 - **In-memory caching**: `PlantRepository` caches the plant list (`cachedPlants`) so tab switches do not trigger full reloads.
+- **Notifications**: `WateringReminderScheduler` uses `AlarmManager.setAndAllowWhileIdle()` to schedule per-plant watering reminders. Reminders are persisted in plain `SharedPreferences` as JSON and restored on boot via `BootCompletedReceiver`. The scheduler is gated by `NotificationPreferenceManager`.
 
 ---
 
@@ -159,6 +167,7 @@ The project currently has **only example/template tests**. When adding tests, us
 3. **AuthInterceptor**: Automatically handles token attachment and session expiration. Do not manually add auth headers in individual API calls.
 4. **ProGuard**: Currently disabled (`isMinifyEnabled = false`). If enabled in the future, update `proguard-rules.pro` to keep Retrofit models and Compose classes.
 5. **Network logging**: `HttpLoggingInterceptor` is active at `Level.BODY`. Be cautious with production builds; consider switching to `Level.HEADERS` or removing it for release.
+6. **Notification permission**: `MainActivity` requests `POST_NOTIFICATIONS` at runtime on Android 13+ (TIRAMISU). The app also declares `RECEIVE_BOOT_COMPLETED` to restore alarm schedules.
 
 ---
 
@@ -173,21 +182,23 @@ The project currently has **only example/template tests**. When adding tests, us
 | `app/src/main/java/.../navigation/PlantNavGraph.kt` | NavHost setup; add new screens here |
 | `app/src/main/java/.../data/local/TokenManager.kt` | Secure token storage and session expiration events |
 | `app/src/main/java/.../data/network/AuthInterceptor.kt` | Automatic auth header injection and 401 handling |
+| `app/src/main/java/.../notifications/WateringReminderScheduler.kt` | AlarmManager logic for per-plant watering reminders |
+| `app/src/main/java/.../data/notifications/NotificationPreferenceManager.kt` | Plain SharedPreferences for notification on/off state |
+| `app/src/main/res/values/strings.xml` | All user-facing strings and care log type labels |
 
 ---
 
 ## Current Limitations (as of latest commit)
 
 - The backend occasionally returns `401 Authenticated user missing.` for `/api/plants`; this is a known backend/API-key association issue, not a client bug.
-- The watering calendar uses a weekly visual placeholder; real reminder data is not yet connected.
 - Edit Profile and Privacy Policy rows in Settings are non-functional placeholders.
 - Dark mode toggle in Settings is UI-only and does not yet persist or override the system theme.
-- Notifications toggle in Settings is UI-only and does not yet schedule real reminders.
-- Edit Plant screen exists but may be partially implemented depending on the active branch.
+- Token refresh (`POST /api/auth/refresh`) is not yet implemented; sessions expire when the JWT expires.
+- The `PlantApiService.uploadImage` endpoint tries multiple part names (`image`, `imageFile`, `file`) as a compatibility workaround.
 
 ---
 
 ## Roadmap
 
-- **Phase 4**: Real image picking, multipart image upload (`POST /api/plants/image`), watering calendar connected to real reminders, local notifications.
+- **Phase 4 (in progress)**: Real image picking, multipart image upload (`POST /api/plants/image`), watering calendar connected to real reminders, local notifications.
 - **Phase 5**: Edit Profile flow (`PATCH /api/users/me`), reactive user profile data, token refresh (`POST /api/auth/refresh`), persisted theme and notification preferences.
