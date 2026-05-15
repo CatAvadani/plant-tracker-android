@@ -25,3 +25,15 @@ data class UpdatePlantRequest(
 data class ImageUploadResponse(
     val imageUrl: String
 )
+
+data class PlantAnalysisResponse(
+    val plantName: String,
+    val confidence: Double,
+    val healthStatus: String,
+    val possibleIssues: List<String>,
+    val wateringSuggestions: List<String>,
+    val lightingSuggestions: List<String>,
+    val careSuggestions: List<String>,
+    val notes: String,
+    val imageUrl: String
+)
