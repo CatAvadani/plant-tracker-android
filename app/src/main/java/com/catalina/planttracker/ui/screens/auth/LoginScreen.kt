@@ -18,8 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -35,7 +33,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -92,29 +89,17 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                    .padding(horizontal = 20.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(28.dp))
                 AuthBrandHeader(compact = true)
                 Spacer(modifier = Modifier.height(28.dp))
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(
-                            16.dp,
-                            RoundedCornerShape(30.dp),
-                            ambientColor = AuthLeaf.copy(alpha = 0.14f)
-                        ),
-                    shape = RoundedCornerShape(30.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.94f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         val title = if (selectedTab == AuthTab.Login) {
@@ -128,19 +113,25 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             "Start tracking your plants and keep their care schedule in one place."
                         }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Text(
                                 text = title,
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = AuthDeepLeaf
-                                )
+                                ),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                             Text(
                                 text = subtitle,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = AuthInk.copy(alpha = 0.68f)
-                                )
+                                ),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                         }
 
@@ -269,7 +260,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         }
                         AuthMetaRow(metaText)
                     }
-                }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -290,7 +280,7 @@ private fun AuthTabSwitcher(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(50.dp),
-        color = Color(0xFFF2F5F0)
+        color = Color(0xFFD8E0D3)
     ) {
         Row(modifier = Modifier.padding(4.dp)) {
             AuthTabButton(
@@ -326,7 +316,7 @@ private fun AuthTabButton(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 10.dp),
+                .padding(vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
