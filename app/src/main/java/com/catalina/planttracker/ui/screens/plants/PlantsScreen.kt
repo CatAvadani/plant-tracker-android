@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -49,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.catalina.planttracker.model.Plant
+import com.catalina.planttracker.notifications.WateringReminderScheduler
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCard
 import com.catalina.planttracker.ui.components.PlantCream
@@ -79,6 +81,7 @@ fun PlantsScreen(
     viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf(PlantFilter.ALL) }
 
@@ -142,6 +145,9 @@ fun PlantsScreen(
                 }
 
                 is PlantUiState.Success -> {
+                    LaunchedEffect(currentState.plants) {
+                        WateringReminderScheduler.scheduleForPlants(context, currentState.plants)
+                    }
                     val filteredPlants = currentState.plants
                         .filterByStatus(selectedFilter)
                         .filterByQuery(query)

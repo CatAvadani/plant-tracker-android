@@ -42,6 +42,11 @@
     <string name="plant_details_watering_logged">Watering logged!</string>
     <string name="plant_details_log_watering">Log Watering</string>
     <string name="plant_details_care_history">Care History</string>
+    <string name="notification_channel_watering_name">Watering reminders</string>
+    <string name="notification_channel_watering_description">Reminders when a plant is due for watering.</string>
+    <string name="notification_watering_title">%1$s needs water</string>
+    <string name="notification_watering_message">Open Leaf Care to log watering and update its care schedule.</string>
+    <string name="notification_unknown_plant">This plant</string>
     <plurals name="home_plants_count">
         <item quantity="one">%1$d plant</item>
         <item quantity="other">%1$d plants</item>

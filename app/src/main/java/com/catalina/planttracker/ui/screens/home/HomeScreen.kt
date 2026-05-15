@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.catalina.planttracker.R
+import com.catalina.planttracker.notifications.WateringReminderScheduler
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCard
 import com.catalina.planttracker.ui.components.PlantCream
@@ -71,6 +73,7 @@ import java.util.Locale
 fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
     val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.loadPlants()
@@ -127,6 +130,9 @@ fun HomeScreen(onPlantClick: (Int) -> Unit, onAddPlantClick: () -> Unit) {
 
             is PlantUiState.Success -> {
                 val plants = state.plants
+                LaunchedEffect(plants) {
+                    WateringReminderScheduler.scheduleForPlants(context, plants)
+                }
                 val needsAttentionPlants = plants
                     .filter { it.healthStatus == 1 || it.healthStatus == 2 }
                     .sortedByDescending { it.healthStatus ?: 0 }
