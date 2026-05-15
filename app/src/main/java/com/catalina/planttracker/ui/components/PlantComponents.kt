@@ -55,7 +55,7 @@ val PlantInk = Color(0xFF27312B)
 val PlantMuted = Color(0xFF748174)
 val PlantGold = Color(0xFFC49000)
 val PlantRed = Color(0xFFB71C1C)
-val PlantLine = Color(0xFFE2ECDD)
+val PlantLine = Color(0xFFC5D2C0)
 
 @Composable
 fun SummaryCard(label: String, value: String, modifier: Modifier = Modifier, containerColor: Color) {

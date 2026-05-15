@@ -397,28 +397,39 @@ private fun PlantDetailsContent(
                 onClick = onEdit,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(52.dp),
+                shape = RoundedCornerShape(18.dp),
                 border = BorderStroke(1.dp, PlantLine),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantInk)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantInk, containerColor = Color(
+                    0xFFDFECDA
+                )
+                )
             ) {
                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Edit", fontWeight = FontWeight.Medium)
             }
-            OutlinedButton(
+            Button(
                 onClick = onRequestDelete,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, PlantRed.copy(alpha = 0.35f)),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantRed),
+                    .height(52.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
                 enabled = !deleting
             ) {
-                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (deleting) "Deleting…" else "Delete", fontWeight = FontWeight.Medium)
+                Text(
+                    if (deleting) "Deleting…" else "Delete",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 
