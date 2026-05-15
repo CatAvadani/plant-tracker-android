@@ -276,7 +276,7 @@ private fun PlantDetailsContent(
         // Quick Stats
         val due = dueInfo(plant.lastWatered, plant.wateringFrequencyDays)
         val (healthValue, healthAccent, healthBg) = when (plant.healthStatus) {
-            0 -> Triple("Healthy", PlantLeaf, PlantLeaf)
+            0 -> Triple("Healthy", Color.White, PlantLeaf)
             1 -> Triple("Fair", PlantGold, Color(0xFFFFF2B8))
             2 -> Triple("Poor", PlantRed, Color(0xFFFFE2DE))
             else -> Triple("Unknown", PlantMuted, PlantMint)

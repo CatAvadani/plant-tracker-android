@@ -599,7 +599,7 @@ private fun HomeDashboardPanel(
                         label = stringResource(R.string.home_metric_total),
                         value = total,
                         icon = Icons.Default.Eco,
-                        color = PlantLeaf,
+                        color = Color.White,
                         containerColor = PlantLeaf,
                         valueColor = Color.White,
                         labelColor = Color.White.copy(alpha = 0.82f),
@@ -622,24 +622,36 @@ private fun MetricPill(
     labelColor: Color = PlantMuted,
     modifier: Modifier = Modifier
 ) {
+    val iconTint = when {
+        color == Color.White && containerColor == PlantLeaf -> PlantLeaf
+        color == Color.White -> PlantInk
+        else -> color
+    }
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         color = containerColor
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(vertical = 10.dp, horizontal = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(20.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .background(Color.White.copy(alpha = 0.85f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
             Text(
                 text = value.toString(),
                 style = MaterialTheme.typography.headlineSmall.copy(
