@@ -37,6 +37,8 @@
     <string name="home_metric_total">Total</string>
     <string name="home_all_clear_banner">All clear - every plant is healthy</string>
     <string name="home_all_watered_banner">All plants are watered on schedule</string>
+    <string name="home_today_care_title">Today\'s Care</string>
+    <string name="home_today_care_all_clear">All plants are on schedule</string>
     <string name="home_empty_title">No plants yet</string>
     <string name="home_empty_message">Tap the + button to add your first plant and start tracking care.</string>
     <string name="plant_details_watering_logged">Watering logged!</string>
