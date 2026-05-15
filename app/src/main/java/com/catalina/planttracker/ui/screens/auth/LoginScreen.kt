@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.catalina.planttracker.R
 import com.catalina.planttracker.ui.auth.AuthState
 import com.catalina.planttracker.ui.auth.AuthViewModel
 import com.catalina.planttracker.ui.auth.AuthViewModelFactory
@@ -66,6 +68,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsStateWithLifecycle()
+    val accountCreatedMessage = stringResource(R.string.auth_account_created_message)
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
@@ -78,7 +81,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 password = ""
                 confirmPassword = ""
                 displayName = ""
-                snackbarHostState.showSnackbar("Account created! Please log in.")
+                scope.launch {
+                    snackbarHostState.showSnackbar(accountCreatedMessage)
+                }
             }
         }
     }
@@ -103,14 +108,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         val title = if (selectedTab == AuthTab.Login) {
-                            "Welcome back"
+                            stringResource(R.string.auth_login_title)
                         } else {
-                            "Create account"
+                            stringResource(R.string.auth_register_title)
                         }
                         val subtitle = if (selectedTab == AuthTab.Login) {
-                            "Sign in to check watering plans, plant health, and upcoming care."
+                            stringResource(R.string.auth_login_subtitle)
                         } else {
-                            "Start tracking your plants and keep their care schedule in one place."
+                            stringResource(R.string.auth_register_subtitle)
                         }
 
                         Column(
@@ -149,7 +154,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             AuthField(
                                 value = displayName,
                                 onValueChange = { displayName = it },
-                                label = "Display Name",
+                                label = stringResource(R.string.auth_display_name_label),
                                 icon = Icons.Default.Person
                             )
                         }
@@ -157,7 +162,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         AuthField(
                             value = email,
                             onValueChange = { email = it },
-                            label = "Email Address",
+                            label = stringResource(R.string.auth_email_label),
                             icon = Icons.Default.Email,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                         )
@@ -165,7 +170,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         AuthField(
                             value = password,
                             onValueChange = { password = it },
-                            label = "Password",
+                            label = stringResource(R.string.auth_password_label),
                             icon = Icons.Default.Lock,
                             visualTransformation = if (passwordVisible) {
                                 VisualTransformation.None
@@ -181,7 +186,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                             AuthField(
                                 value = confirmPassword,
                                 onValueChange = { confirmPassword = it },
-                                label = "Confirm Password",
+                                label = stringResource(R.string.auth_confirm_password_label),
                                 icon = Icons.Default.Lock,
                                 visualTransformation = if (confirmPasswordVisible) {
                                     VisualTransformation.None
@@ -202,12 +207,12 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 TextButton(
                                     onClick = {
                                         scope.launch {
-                                            snackbarHostState.showSnackbar("Coming soon")
+                                            snackbarHostState.showSnackbar(context.getString(R.string.auth_coming_soon))
                                         }
                                     }
                                 ) {
                                     Text(
-                                        "Forgot password?",
+                                        stringResource(R.string.auth_forgot_password),
                                         style = MaterialTheme.typography.labelLarge.copy(
                                             color = AuthLeaf,
                                             fontWeight = FontWeight.Medium
@@ -223,7 +228,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        val buttonText = if (selectedTab == AuthTab.Login) "Login" else "Register"
+                        val buttonText = if (selectedTab == AuthTab.Login) {
+                            stringResource(R.string.auth_login_tab)
+                        } else {
+                            stringResource(R.string.auth_register_tab)
+                        }
                         val enabled = when (selectedTab) {
                             AuthTab.Login -> authState !is AuthState.Loading &&
                                 email.isNotBlank() &&
@@ -254,9 +263,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         )
 
                         val metaText = if (selectedTab == AuthTab.Login) {
-                            "Your plant journal is synced securely."
+                            stringResource(R.string.auth_login_meta)
                         } else {
-                            "Passwords must match before registration."
+                            stringResource(R.string.auth_register_meta)
                         }
                         AuthMetaRow(metaText)
                     }
@@ -284,13 +293,13 @@ private fun AuthTabSwitcher(
     ) {
         Row(modifier = Modifier.padding(4.dp)) {
             AuthTabButton(
-                text = "Login",
+                text = stringResource(R.string.auth_login_tab),
                 selected = selectedTab == AuthTab.Login,
                 onClick = { onTabSelected(AuthTab.Login) },
                 modifier = Modifier.weight(1f)
             )
             AuthTabButton(
-                text = "Register",
+                text = stringResource(R.string.auth_register_tab),
                 selected = selectedTab == AuthTab.Register,
                 onClick = { onTabSelected(AuthTab.Register) },
                 modifier = Modifier.weight(1f)

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Eco
@@ -50,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.catalina.planttracker.R
 import com.catalina.planttracker.model.Plant
 import com.catalina.planttracker.notifications.WateringReminderScheduler
 import com.catalina.planttracker.ui.components.PlantBackground
@@ -74,11 +77,11 @@ import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
 
-private enum class PlantFilter(val label: String) {
-    ALL("All"),
-    HEALTHY("Healthy"),
-    CARE("Care"),
-    CRITICAL("Critical")
+private enum class PlantFilter(@param:StringRes val labelRes: Int) {
+    ALL(R.string.plants_filter_all),
+    HEALTHY(R.string.plants_filter_healthy),
+    CARE(R.string.plants_filter_care),
+    CRITICAL(R.string.plants_filter_critical)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -274,10 +277,10 @@ private fun PlantGridCard(plant: Plant, onClick: () -> Unit) {
             )
 
             val (badgeColor, badgeText) = when (plant.healthStatus) {
-                0 -> PlantLeaf to "Healthy"
-                1 -> Color(0xFFFFA000) to "Care"
-                2 -> Color(0xFFE53935) to "Critical"
-                else -> PlantMuted to "Unknown"
+                0 -> PlantLeaf to stringResource(R.string.plants_status_healthy)
+                1 -> Color(0xFFFFA000) to stringResource(R.string.plants_status_care)
+                2 -> Color(0xFFE53935) to stringResource(R.string.plants_status_critical)
+                else -> PlantMuted to stringResource(R.string.plants_status_unknown)
             }
 
             Surface(
@@ -313,7 +316,7 @@ private fun PlantGridCard(plant: Plant, onClick: () -> Unit) {
                 )
                 plant.wateringFrequencyDays?.let { days ->
                     Text(
-                        text = "Every ${days}d",
+                        text = stringResource(R.string.plants_frequency_days_short, days),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = Color.White.copy(alpha = 0.85f)
                         )
@@ -439,7 +442,7 @@ private fun PlantsLibraryControls(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PlantFilter.entries.forEach { filter ->
                         FilterPill(
-                            label = filter.label,
+                            label = stringResource(filter.labelRes),
                             selected = selectedFilter == filter,
                             onClick = { onFilterChange(filter) }
                         )

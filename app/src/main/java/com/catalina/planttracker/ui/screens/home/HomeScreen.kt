@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.catalina.planttracker.R
+import com.catalina.planttracker.data.model.CareLogEntryType
 import com.catalina.planttracker.model.Plant
 import com.catalina.planttracker.notifications.WateringReminderScheduler
 import com.catalina.planttracker.ui.carelogs.CareLogViewModel
@@ -326,20 +327,26 @@ private fun TodayCareSection(
                         isAnimating = isAnimating,
                         onClick = { onPlantClick(plant.id) },
                         onWater = {
-                            recentlyTappedIds = recentlyTappedIds + plant.id
-                            careLogViewModel.createCareLog(plant.id, 0, null)
-                            plantViewModel.updatePlant(
-                                id = plant.id,
-                                name = plant.name,
-                                species = plant.species,
-                                location = plant.location,
-                                wateringFrequencyDays = plant.wateringFrequencyDays,
-                                lastWatered = todayStr,
-                                healthStatus = plant.healthStatus,
-                                notes = plant.notes,
-                                imageUrl = plant.imageUrl
-                            )
-                            plantViewModel.loadPlants()
+                            if (!recentlyTappedIds.contains(plant.id)) {
+                                recentlyTappedIds = recentlyTappedIds + plant.id
+                                careLogViewModel.createCareLog(
+                                    plant.id,
+                                    CareLogEntryType.WATERED.value,
+                                    null
+                                )
+                                plantViewModel.updatePlant(
+                                    id = plant.id,
+                                    name = plant.name,
+                                    species = plant.species,
+                                    location = plant.location,
+                                    wateringFrequencyDays = plant.wateringFrequencyDays,
+                                    lastWatered = todayStr,
+                                    healthStatus = plant.healthStatus,
+                                    notes = plant.notes,
+                                    imageUrl = plant.imageUrl
+                                )
+                                plantViewModel.loadPlants()
+                            }
                         }
                     )
                 }
@@ -358,7 +365,7 @@ private fun TodayCareTaskRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onWater),
+            .clickable(enabled = !isAnimating, onClick = onWater),
         shape = RoundedCornerShape(18.dp),
         color = Color.White
     ) {

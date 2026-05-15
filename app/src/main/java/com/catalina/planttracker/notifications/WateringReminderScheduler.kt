@@ -45,12 +45,21 @@ object WateringReminderScheduler {
         createNotificationChannel(appContext)
 
         val knownPlantIds = plants.map { it.id }.toSet()
-        storedReminders(appContext)
+        val storedReminders = storedReminders(appContext)
+        val storedByPlantId = storedReminders.associateBy { it.plantId }
+
+        storedReminders
             .filterNot { it.plantId in knownPlantIds }
             .forEach { cancelReminder(appContext, it.plantId) }
 
         val reminders = plants.mapNotNull { plant ->
-            val dueAt = dueAtMillis(plant) ?: return@mapNotNull null
+            val computedDueAt = dueAtMillis(plant) ?: return@mapNotNull null
+            val storedReminder = storedByPlantId[plant.id]
+            val dueAt = storedReminder
+                ?.takeIf { it.dueAtMillis > computedDueAt }
+                ?.dueAtMillis
+                ?: computedDueAt
+
             ScheduledReminder(
                 plantId = plant.id,
                 plantName = plant.name,
