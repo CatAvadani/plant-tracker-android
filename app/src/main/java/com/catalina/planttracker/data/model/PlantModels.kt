@@ -35,5 +35,6 @@ data class PlantAnalysisResponse(
     val lightingSuggestions: List<String>,
     val careSuggestions: List<String>,
     val notes: String,
-    val imageUrl: String
+    val imageUrl: String,
+    val wateringFrequencyDays: Int? = null
 )
