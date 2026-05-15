@@ -10,13 +10,16 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
         val path = request.url.encodedPath
         val requestBuilder = request.newBuilder()
         val isAuthAttempt = path.contains("api/auth/login") || path.contains("api/auth/register")
+        val isPlantAnalysis = path.contains("api/plant-analysis")
 
         if (!isAuthAttempt) {
             tokenManager.getToken()?.let { token ->
                 requestBuilder.addHeader("Authorization", "Bearer $token")
             }
-            tokenManager.getApiKey()?.let { apiKey ->
-                requestBuilder.addHeader("X-Api-Key", apiKey)
+            if (!isPlantAnalysis) {
+                tokenManager.getApiKey()?.let { apiKey ->
+                    requestBuilder.addHeader("X-Api-Key", apiKey)
+                }
             }
         }
 

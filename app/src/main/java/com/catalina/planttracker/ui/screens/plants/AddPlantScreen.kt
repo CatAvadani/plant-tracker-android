@@ -1,5 +1,7 @@
 package com.catalina.planttracker.ui.screens.plants
 
+import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,10 +27,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.LocalFlorist
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
@@ -42,9 +49,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -69,6 +78,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.catalina.planttracker.data.model.PlantAnalysisResponse
+import com.catalina.planttracker.ui.analysis.PlantAnalysisUiState
+import com.catalina.planttracker.ui.analysis.PlantAnalysisViewModel
+import com.catalina.planttracker.ui.analysis.PlantAnalysisViewModelFactory
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCream
 import com.catalina.planttracker.ui.components.PlantDeepLeaf
@@ -83,6 +96,7 @@ import com.catalina.planttracker.ui.components.plantStatusLabel
 import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
 import com.catalina.planttracker.ui.plants.PlantViewModelFactory
+import java.io.File
 
 private data class HealthChoice(
     val value: Int,
@@ -100,8 +114,10 @@ private val healthChoices = listOf(
 @Composable
 fun AddPlantScreen(onBack: () -> Unit) {
     val viewModel: PlantViewModel = viewModel(factory = PlantViewModelFactory())
+    val analysisViewModel: PlantAnalysisViewModel = viewModel(factory = PlantAnalysisViewModelFactory())
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val uploadedImageUrl by viewModel.uploadedImageUrl.collectAsStateWithLifecycle()
+    val analysisState by analysisViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var name by remember { mutableStateOf("") }
@@ -111,6 +127,7 @@ fun AddPlantScreen(onBack: () -> Unit) {
     var notes by remember { mutableStateOf("") }
     var healthStatus by remember { mutableStateOf(0) }
     var nameError by remember { mutableStateOf(false) }
+    var frequencyError by remember { mutableStateOf<String?>(null) }
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isSaving by remember { mutableStateOf(false) }
@@ -118,7 +135,19 @@ fun AddPlantScreen(onBack: () -> Unit) {
     val pickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        selectedImageUri = uri
+        uri?.let {
+            selectedImageUri = it
+            analysisViewModel.reset()
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let {
+            selectedImageUri = it.savePlantAnalysisImage(context)
+            analysisViewModel.reset()
+        }
     }
 
     LaunchedEffect(uiState) {
@@ -189,6 +218,37 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 onPickImage = { pickerLauncher.launch("image/*") }
             )
 
+            PlantAnalysisHelperCard(
+                selectedImageUri = selectedImageUri,
+                analysisState = analysisState,
+                onPickImage = { pickerLauncher.launch("image/*") },
+                onCaptureImage = { cameraLauncher.launch(null) },
+                onAnalyzeImage = {
+                    selectedImageUri?.let { uri ->
+                        analysisViewModel.analyzeImage(uri, context)
+                    }
+                },
+                onCancelAnalysis = analysisViewModel::cancelAnalysis,
+                onRetryAnalysis = {
+                    selectedImageUri?.let { uri ->
+                        analysisViewModel.analyzeImage(uri, context)
+                    }
+                },
+                onApply = { result ->
+                    name = result.plantName
+                    if (species.isBlank()) {
+                        species = result.plantName
+                    }
+                    if (frequency.isBlank()) {
+                        frequency = result.recommendedWateringFrequencyDays().toString()
+                        frequencyError = null
+                    }
+                    healthStatus = result.healthStatus.toPlantHealthStatus()
+                    notes = result.toPlantNotes()
+                    nameError = false
+                }
+            )
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -229,10 +289,15 @@ fun AddPlantScreen(onBack: () -> Unit) {
 
                     AddPlantField(
                         value = frequency,
-                        onValueChange = { frequency = it.filter(Char::isDigit) },
+                        onValueChange = {
+                            frequency = it.filter(Char::isDigit)
+                            frequencyError = wateringFrequencyError(frequency)
+                        },
                         label = "Watering frequency",
                         icon = Icons.Default.EventRepeat,
                         keyboardType = KeyboardType.Number,
+                        isError = frequencyError != null,
+                        supportingText = frequencyError,
                         suffix = "days"
                     )
 
@@ -263,8 +328,11 @@ fun AddPlantScreen(onBack: () -> Unit) {
             Button(
                 onClick = {
                     if (isSaving || isLoading) return@Button
+                    val currentFrequencyError = wateringFrequencyError(frequency)
                     if (name.isBlank()) {
                         nameError = true
+                    } else if (currentFrequencyError != null) {
+                        frequencyError = currentFrequencyError
                     } else {
                         isSaving = true
                         if (selectedImageUri != null) {
@@ -410,6 +478,251 @@ private fun AddPlantHero(
 }
 
 @Composable
+private fun PlantAnalysisHelperCard(
+    selectedImageUri: Uri?,
+    analysisState: PlantAnalysisUiState,
+    onPickImage: () -> Unit,
+    onCaptureImage: () -> Unit,
+    onAnalyzeImage: () -> Unit,
+    onCancelAnalysis: () -> Unit,
+    onRetryAnalysis: () -> Unit,
+    onApply: (PlantAnalysisResponse) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(10.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.10f)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(PlantMint, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = PlantLeaf
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "AI plant helper",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = PlantInk,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Text(
+                        text = "Analyze a photo, then review and apply suggestions.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onPickImage,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Choose")
+                }
+                OutlinedButton(
+                    onClick = onCaptureImage,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Camera")
+                }
+            }
+
+            Button(
+                onClick = onAnalyzeImage,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                enabled = selectedImageUri != null && analysisState !is PlantAnalysisUiState.Loading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PlantDeepLeaf,
+                    disabledContainerColor = Color(0xFFB7CDB1),
+                    contentColor = Color.White,
+                    disabledContentColor = Color.White.copy(alpha = 0.78f)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                if (analysisState is PlantAnalysisUiState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Analyzing")
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(19.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text("Analyze Photo", fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            when (analysisState) {
+                PlantAnalysisUiState.Idle -> Unit
+                PlantAnalysisUiState.Loading -> {
+                    TextButton(
+                        onClick = onCancelAnalysis,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+                is PlantAnalysisUiState.Error -> {
+                    ScreenStateCard(
+                        title = "Could not analyze photo",
+                        message = analysisState.message,
+                        isError = true
+                    )
+                    if (analysisState.isRetryable && selectedImageUri != null) {
+                        OutlinedButton(
+                            onClick = onRetryAnalysis,
+                            modifier = Modifier.align(Alignment.End),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Retry")
+                        }
+                    }
+                }
+                is PlantAnalysisUiState.Success -> {
+                    PlantAnalysisResultCard(
+                        result = analysisState.result,
+                        onApply = { onApply(analysisState.result) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlantAnalysisResultCard(
+    result: PlantAnalysisResponse,
+    onApply: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(PlantCream, RoundedCornerShape(18.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = PlantLeaf
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = result.plantName,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = PlantInk,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = "${(result.confidence * 100).toInt()}% confidence - ${result.healthStatus}",
+                    style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
+                )
+            }
+        }
+
+        if (result.notes.isNotBlank()) {
+            Text(
+                text = result.notes,
+                style = MaterialTheme.typography.bodyMedium.copy(color = PlantInk)
+            )
+        }
+
+        AnalysisSuggestionSection("Possible issues", result.possibleIssues)
+        AnalysisSuggestionSection("Watering", result.wateringSuggestions)
+        AnalysisSuggestionSection("Lighting", result.lightingSuggestions)
+        AnalysisSuggestionSection("Care", result.careSuggestions)
+
+        Button(
+            onClick = onApply,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PlantLeaf),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("Apply Suggestions", fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun AnalysisSuggestionSection(
+    title: String,
+    suggestions: List<String>
+) {
+    if (suggestions.isEmpty()) return
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge.copy(
+                color = PlantDeepLeaf,
+                fontWeight = FontWeight.Bold
+            )
+        )
+        suggestions.forEach { suggestion ->
+            Text(
+                text = "- $suggestion",
+                style = MaterialTheme.typography.bodySmall.copy(color = PlantInk)
+            )
+        }
+    }
+}
+
+@Composable
 private fun AddPlantField(
     value: String,
     onValueChange: (String) -> Unit,
@@ -538,5 +851,90 @@ private fun HealthStatusSelector(
                 }
             }
         }
+    }
+}
+
+private fun Bitmap.savePlantAnalysisImage(context: Context): Uri {
+    val file = File(context.cacheDir, "plant_analysis_${System.currentTimeMillis()}.jpg")
+    file.outputStream().use { output ->
+        compress(Bitmap.CompressFormat.JPEG, 92, output)
+    }
+    return Uri.fromFile(file)
+}
+
+private fun String.toPlantHealthStatus(): Int {
+    val normalized = lowercase()
+    return when {
+        normalized.contains("critical") ||
+            normalized.contains("poor") ||
+            normalized.contains("disease") ||
+            normalized.contains("pest") ||
+            normalized.contains("severe") -> 2
+        normalized.contains("dry") ||
+            normalized.contains("issue") ||
+            normalized.contains("moderate") ||
+            normalized.contains("attention") ||
+            normalized.contains("care") -> 1
+        else -> 0
+    }
+}
+
+private fun PlantAnalysisResponse.toPlantNotes(): String {
+    val sections = buildList {
+        if (notes.isNotBlank()) add(notes)
+        addSuggestionText("Possible issues", possibleIssues)
+        addSuggestionText("Watering", wateringSuggestions)
+        addSuggestionText("Lighting", lightingSuggestions)
+        addSuggestionText("Care", careSuggestions)
+    }
+    return sections.joinToString(separator = "\n\n")
+}
+
+private fun wateringFrequencyError(value: String): String? {
+    val days = value.toIntOrNull()
+    return when {
+        value.isBlank() -> "Watering frequency is required"
+        days == null || days !in 1..365 -> "Watering frequency must be between 1 and 365 days"
+        else -> null
+    }
+}
+
+private fun PlantAnalysisResponse.recommendedWateringFrequencyDays(): Int {
+    wateringFrequencyDays?.takeIf { it in 1..365 }?.let { return it }
+
+    val text = wateringSuggestions.joinToString(separator = " ").lowercase()
+    return when {
+        text.contains("none") ||
+            text.contains("not needed") ||
+            text.contains("unnecessary") ||
+            text.contains("artificial") -> 30
+        text.contains("daily") ||
+            text.contains("every day") -> 1
+        text.contains("twice a week") ||
+            text.contains("2 times a week") -> 3
+        text.contains("weekly") ||
+            text.contains("once a week") ||
+            text.contains("every week") -> 7
+        text.contains("biweekly") ||
+            text.contains("every two weeks") ||
+            text.contains("every 2 weeks") -> 14
+        text.contains("monthly") ||
+            text.contains("once a month") -> 30
+        text.contains("soil to dry") ||
+            text.contains("top 2-3 cm") ||
+            text.contains("top inch") -> 7
+        text.contains("moderately") ||
+            text.contains("growing season") -> 7
+        text.contains("sparingly") ||
+            text.contains("drought") ||
+            text.contains("succulent") ||
+            text.contains("cactus") -> 14
+        else -> 7
+    }
+}
+
+private fun MutableList<String>.addSuggestionText(title: String, suggestions: List<String>) {
+    if (suggestions.isNotEmpty()) {
+        add("$title:\n${suggestions.joinToString(separator = "\n") { "- $it" }}")
     }
 }

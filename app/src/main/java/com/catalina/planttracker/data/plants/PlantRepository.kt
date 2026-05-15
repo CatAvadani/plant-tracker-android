@@ -9,6 +9,8 @@ import com.catalina.planttracker.data.model.UpdatePlantRequest
 import com.catalina.planttracker.data.network.RetrofitInstance
 import com.catalina.planttracker.model.Plant
 import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -178,16 +180,41 @@ class PlantRepository {
     private fun responseMessage(response: Response<*>, fallback: String): String {
         val errorBody = response.errorBody()?.string()
         val serverMessage = errorBody?.let { body ->
-            runCatching {
-                gson.fromJson(body, ErrorResponse::class.java).message
-            }.getOrNull()
-                ?: body.takeIf { it.isNotBlank() }
+            parseServerMessage(body)
         }
 
         return if (!serverMessage.isNullOrBlank()) {
             "$fallback: $serverMessage"
         } else {
             "$fallback: HTTP ${response.code()}"
+        }
+    }
+
+    private fun parseServerMessage(body: String): String? {
+        val message = runCatching {
+            gson.fromJson(body, ErrorResponse::class.java).message
+        }.getOrNull()
+        if (!message.isNullOrBlank()) return message
+
+        val json = runCatching {
+            JsonParser.parseString(body).asJsonObject
+        }.getOrNull() ?: return body.takeIf { it.isNotBlank() }
+
+        val validationErrors = json["errors"]?.asJsonObject?.validationMessages().orEmpty()
+        if (validationErrors.isNotEmpty()) {
+            return validationErrors.joinToString(separator = " ")
+        }
+
+        val title = json["title"]?.asString?.takeIf { it.isNotBlank() }
+        val detail = json["detail"]?.asString?.takeIf { it.isNotBlank() }
+        return detail ?: title ?: body.takeIf { it.isNotBlank() }
+    }
+}
+
+private fun JsonObject.validationMessages(): List<String> {
+    return entrySet().flatMap { entry ->
+        entry.value.asJsonArray.mapNotNull { item ->
+            item.asString.takeIf { it.isNotBlank() }
         }
     }
 }
