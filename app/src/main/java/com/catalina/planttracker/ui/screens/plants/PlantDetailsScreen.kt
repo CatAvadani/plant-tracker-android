@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Edit
@@ -35,6 +36,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +67,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -77,15 +80,15 @@ import com.catalina.planttracker.ui.carelogs.CareLogViewModelFactory
 import com.catalina.planttracker.ui.components.PlantBackground
 import com.catalina.planttracker.ui.components.PlantCream
 import com.catalina.planttracker.ui.components.PlantDeepLeaf
-import com.catalina.planttracker.ui.components.PlantGold
 import com.catalina.planttracker.ui.components.PlantInk
 import com.catalina.planttracker.ui.components.PlantLeaf
+import com.catalina.planttracker.ui.components.PlantLine
 import com.catalina.planttracker.ui.components.PlantMint
 import com.catalina.planttracker.ui.components.PlantMuted
+import com.catalina.planttracker.ui.components.PlantGold
 import com.catalina.planttracker.ui.components.PlantRed
 import com.catalina.planttracker.ui.components.PlantStatusChip
 import com.catalina.planttracker.ui.components.ScreenStateCard
-import com.catalina.planttracker.ui.components.SectionHeader
 import com.catalina.planttracker.ui.components.plantStatusColor
 import com.catalina.planttracker.ui.plants.PlantUiState
 import com.catalina.planttracker.ui.plants.PlantViewModel
@@ -263,127 +266,75 @@ private fun PlantDetailsContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        Spacer(modifier = Modifier.height(4.dp))
+
         PlantHero(plant)
 
-        // Stat cards
+        // Quick Stats
         val due = dueInfo(plant.lastWatered, plant.wateringFrequencyDays)
+        val (healthValue, healthAccent, healthBg) = when (plant.healthStatus) {
+            0 -> Triple("Healthy", PlantLeaf, PlantLeaf)
+            1 -> Triple("Fair", PlantGold, Color(0xFFFFF2B8))
+            2 -> Triple("Poor", PlantRed, Color(0xFFFFE2DE))
+            else -> Triple("Unknown", PlantMuted, PlantMint)
+        }
+        val (freqValue, freqAccent, freqBg) = if (plant.wateringFrequencyDays != null) {
+            Triple("Every ${plant.wateringFrequencyDays} d", Color.White, PlantLeaf)
+        } else {
+            Triple("Not set", PlantMuted, PlantMint)
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            DetailStatCard(
+            CompactStatCard(
                 label = "Frequency",
-                value = plant.wateringFrequencyDays?.let { "${it}d" } ?: "-",
-                icon = Icons.Default.WaterDrop,
-                modifier = Modifier.weight(1f),
-                tint = PlantLeaf,
-                containerColor = PlantLeaf,
-                valueColor = Color.White,
-                labelColor = Color.White.copy(alpha = 0.82f)
-            )
-            DetailStatCard(
-                label = "Health",
-                value = when (plant.healthStatus) {
-                    0 -> "Good"
-                    1 -> "Fair"
-                    2 -> "Poor"
-                    else -> "-"
-                },
-                icon = Icons.Default.Eco,
-                modifier = Modifier.weight(1f),
-                tint = plantStatusColor(plant.healthStatus),
-                containerColor = plantStatusContainerColor(plant.healthStatus)
-            )
-            DetailStatCard(
-                label = "Due",
-                value = due.value,
+                value = freqValue,
                 icon = Icons.Default.EventRepeat,
                 modifier = Modifier.weight(1f),
-                tint = due.tint,
+                accentColor = freqAccent,
+                containerColor = freqBg
+            )
+            CompactStatCard(
+                label = "Health",
+                value = healthValue,
+                icon = Icons.Default.Eco,
+                modifier = Modifier.weight(1f),
+                accentColor = healthAccent,
+                containerColor = healthBg
+            )
+            CompactStatCard(
+                label = "Due",
+                value = due.value,
+                icon = Icons.Default.WaterDrop,
+                modifier = Modifier.weight(1f),
+                accentColor = due.tint,
                 containerColor = due.containerColor
             )
         }
 
-        SectionHeader(
-            title = "Care details",
-            subtitle = "The basics for this plant"
-        )
+        // Watering Schedule Card
+        SectionTitle("Watering Schedule")
+        ScheduleCard(plant, due)
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(10.dp, RoundedCornerShape(30.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
-            shape = RoundedCornerShape(30.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                DetailRow(Icons.Default.LocalFlorist, "Species", plant.species ?: "Unknown")
-                DetailRow(Icons.Default.Place, "Location", plant.location ?: "Unknown")
-                DetailRow(
-                    Icons.Default.EventRepeat,
-                    "Watering frequency",
-                    plant.wateringFrequencyDays?.let { "Every $it days" } ?: "Not set"
-                )
-                DetailRow(
-                    Icons.Default.WaterDrop,
-                    "Last watered",
-                    formatFullDate(plant.lastWatered)
-                )
-            }
-        }
+        // Plant Info Card
+        SectionTitle("About")
+        InfoCard(plant)
 
-        SectionHeader(
-            title = "Notes",
-            subtitle = "Care observations and reminders"
-        )
+        // Notes Card
+        SectionTitle("Notes")
+        NotesCard(plant.notes)
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(10.dp, RoundedCornerShape(30.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
-            shape = RoundedCornerShape(30.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .background(PlantMint, RoundedCornerShape(14.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Notes,
-                        contentDescription = null,
-                        tint = PlantLeaf,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Text(
-                    text = plant.notes ?: "No notes available.",
-                    style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        // Care log actions
+        // Care Actions
+        Spacer(modifier = Modifier.height(4.dp))
         Button(
             onClick = onLogWatering,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp),
+                .height(56.dp),
             enabled = !loggingWatering,
             colors = ButtonDefaults.buttonColors(containerColor = PlantLeaf),
             shape = RoundedCornerShape(20.dp)
@@ -406,18 +357,18 @@ private fun PlantDetailsContent(
                 .fillMaxWidth()
                 .height(52.dp),
             shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.dp, PlantLeaf.copy(alpha = 0.4f))
+            border = BorderStroke(1.dp, PlantLeaf.copy(alpha = 0.35f)),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantDeepLeaf)
         ) {
             Icon(
                 Icons.Default.History,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = PlantDeepLeaf
+                modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 stringResource(R.string.plant_details_care_history),
-                style = MaterialTheme.typography.labelLarge.copy(color = PlantDeepLeaf)
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
             )
             Spacer(modifier = Modifier.weight(1f))
             Icon(
@@ -436,6 +387,8 @@ private fun PlantDetailsContent(
             )
         }
 
+        // Management Actions
+        SectionTitle("Manage")
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -444,30 +397,45 @@ private fun PlantDetailsContent(
                 onClick = onEdit,
                 modifier = Modifier
                     .weight(1f)
-                    .height(54.dp),
-                shape = RoundedCornerShape(18.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, PlantLine),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantInk)
             ) {
                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Edit")
+                Text("Edit", fontWeight = FontWeight.Medium)
             }
-            Button(
+            OutlinedButton(
                 onClick = onRequestDelete,
                 modifier = Modifier
                     .weight(1f)
-                    .height(54.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                shape = RoundedCornerShape(18.dp),
+                    .height(48.dp),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, PlantRed.copy(alpha = 0.35f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantRed),
                 enabled = !deleting
             ) {
                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (deleting) "Deleting…" else "Delete")
+                Text(if (deleting) "Deleting…" else "Delete", fontWeight = FontWeight.Medium)
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
     }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium.copy(
+            color = PlantDeepLeaf,
+            fontWeight = FontWeight.Bold
+        ),
+        modifier = Modifier.padding(top = 4.dp)
+    )
 }
 
 @Composable
@@ -475,20 +443,15 @@ private fun PlantHero(plant: Plant) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(14.dp, RoundedCornerShape(34.dp), ambientColor = PlantLeaf.copy(alpha = 0.14f)),
-        shape = RoundedCornerShape(34.dp),
+            .shadow(12.dp, RoundedCornerShape(28.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(290.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(Color.White, PlantCream, Color(0xFFDDEFD6))
-                    )
-                )
+                .height(280.dp)
         ) {
             if (!plant.imageUrl.isNullOrBlank()) {
                 AsyncImage(
@@ -496,47 +459,77 @@ private fun PlantHero(plant: Plant) {
                     contentDescription = plant.name,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(34.dp)),
+                        .clip(RoundedCornerShape(28.dp)),
                     contentScale = ContentScale.Crop
+                )
+                // Bottom gradient scrim for text readability
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.45f)
+                                )
+                            )
+                        )
                 )
             } else {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color(0xFFE8F5E9),
+                                    Color(0xFFDDF0D8),
+                                    Color(0xFFF1F8E9)
+                                )
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(110.dp)
-                            .background(PlantMint, CircleShape),
+                            .size(100.dp)
+                            .background(Color.White.copy(alpha = 0.72f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Eco,
                             contentDescription = null,
-                            modifier = Modifier.size(62.dp),
+                            modifier = Modifier.size(56.dp),
                             tint = PlantLeaf
                         )
                     }
                 }
             }
 
+            // Floating info panel
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(18.dp)
+                    .padding(16.dp)
                     .shadow(
-                        elevation = 10.dp,
-                        shape = RoundedCornerShape(24.dp),
-                        ambientColor = PlantInk.copy(alpha = 0.12f),
-                        spotColor = PlantInk.copy(alpha = 0.08f)
+                        elevation = 8.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        ambientColor = PlantInk.copy(alpha = 0.1f),
+                        spotColor = PlantInk.copy(alpha = 0.06f)
                     ),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.97f),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.72f))
+                shape = RoundedCornerShape(20.dp),
+                color = if (!plant.imageUrl.isNullOrBlank()) {
+                    Color.White.copy(alpha = 0.96f)
+                } else {
+                    Color.White.copy(alpha = 0.97f)
+                },
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
                         text = plant.name,
@@ -555,74 +548,192 @@ private fun PlantHero(plant: Plant) {
 }
 
 @Composable
-private fun DetailStatCard(
+private fun CompactStatCard(
     label: String,
     value: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    tint: Color = PlantLeaf,
-    containerColor: Color = Color.White,
-    valueColor: Color = PlantInk,
-    labelColor: Color = PlantMuted
+    accentColor: Color = PlantLeaf,
+    containerColor: Color = Color.White
 ) {
+    val iconTint = when {
+        accentColor == Color.White && containerColor == PlantLeaf -> PlantLeaf
+        accentColor == Color.White -> PlantInk
+        else -> accentColor
+    }
     Card(
         modifier = modifier
-            .height(112.dp)
-            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = tint.copy(alpha = 0.1f)),
-        shape = RoundedCornerShape(24.dp),
+            .height(100.dp)
+            .shadow(6.dp, RoundedCornerShape(20.dp), ambientColor = iconTint.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
-                    .background(Color.White.copy(alpha = 0.62f), CircleShape),
+                    .size(34.dp)
+                    .background(Color.White.copy(alpha = 0.85f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(17.dp))
+                Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        color = valueColor,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = accentColor,
+                    fontWeight = FontWeight.Bold
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = accentColor.copy(alpha = 0.72f),
+                    fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = labelColor,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
+            )
         }
     }
 }
 
 @Composable
-private fun DetailRow(icon: ImageVector, label: String, value: String) {
+private fun ScheduleCard(plant: Plant, due: DueInfo) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ScheduleColumn(
+                icon = Icons.Default.EventRepeat,
+                label = "Frequency",
+                value = plant.wateringFrequencyDays?.let { "Every $it d" } ?: "—",
+                accentColor = PlantLeaf,
+                modifier = Modifier.weight(1f)
+            )
+            VerticalScheduleDivider()
+            ScheduleColumn(
+                icon = Icons.Default.CalendarMonth,
+                label = "Last watered",
+                value = formatFullDate(plant.lastWatered),
+                accentColor = PlantMuted,
+                modifier = Modifier.weight(1f)
+            )
+            VerticalScheduleDivider()
+            ScheduleColumn(
+                icon = Icons.Default.WaterDrop,
+                label = "Next due",
+                value = due.value,
+                accentColor = due.tint,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScheduleColumn(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .background(accentColor.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(17.dp))
+        }
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleSmall.copy(
+                color = PlantInk,
+                fontWeight = FontWeight.Bold
+            ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = PlantMuted,
+                fontWeight = FontWeight.Medium
+            )
+        )
+    }
+}
+
+@Composable
+private fun VerticalScheduleDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(44.dp)
+            .background(PlantLine)
+    )
+}
+
+@Composable
+private fun InfoCard(plant: Plant) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            InfoRow(Icons.Default.LocalFlorist, "Species", plant.species ?: "Unknown")
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = PlantLine)
+            InfoRow(Icons.Default.Place, "Location", plant.location ?: "Unknown")
+        }
+    }
+}
+
+@Composable
+private fun InfoRow(icon: ImageVector, label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
-                .background(PlantMint, RoundedCornerShape(14.dp)),
+                .size(40.dp)
+                .background(PlantMint, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = PlantLeaf, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = null, tint = PlantLeaf, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -637,6 +748,70 @@ private fun DetailRow(icon: ImageVector, label: String, value: String) {
                     color = PlantInk
                 )
             )
+        }
+    }
+}
+
+@Composable
+private fun NotesCard(notes: String?) {
+    val hasNotes = !notes.isNullOrBlank()
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                8.dp,
+                RoundedCornerShape(24.dp),
+                ambientColor = if (hasNotes) PlantLeaf.copy(alpha = 0.06f) else PlantLeaf.copy(alpha = 0.08f)
+            ),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (hasNotes) PlantCream else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(PlantMint, RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Notes,
+                    contentDescription = null,
+                    tint = PlantLeaf,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            if (hasNotes) {
+                Text(
+                    text = notes,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = PlantInk.copy(alpha = 0.85f),
+                        lineHeight = 22.sp
+                    ),
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "No notes yet",
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = PlantMuted,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Tap Edit to add care observations.",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted.copy(alpha = 0.7f))
+                    )
+                }
+            }
         }
     }
 }
@@ -673,23 +848,23 @@ private data class DueInfo(val value: String, val tint: Color, val containerColo
 
 private fun dueInfo(lastWatered: String?, frequencyDays: Int?): DueInfo {
     if (lastWatered.isNullOrBlank() || frequencyDays == null) {
-        return DueInfo("-", PlantMuted, PlantMint)
+        return DueInfo("—", PlantMuted, PlantMint)
     }
     return try {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val last = sdf.parse(lastWatered.substringBefore("T")) ?: return DueInfo("-", PlantMuted, PlantMint)
+        val last = sdf.parse(lastWatered.substringBefore("T")) ?: return DueInfo("—", PlantMuted, PlantMint)
         val todayStr = sdf.format(Date())
-        val today = sdf.parse(todayStr) ?: return DueInfo("-", PlantMuted, PlantMint)
+        val today = sdf.parse(todayStr) ?: return DueInfo("—", PlantMuted, PlantMint)
         val daysSince = ((today.time - last.time) / (1000L * 60 * 60 * 24)).toInt()
         val daysLeft = frequencyDays - daysSince
         when {
             daysLeft < 0 -> DueInfo("${-daysLeft}d late", PlantRed, Color(0xFFFFE2DE))
             daysLeft == 0 -> DueInfo("Today!", PlantGold, Color(0xFFFFF2B8))
-            daysLeft <= 3 -> DueInfo("${daysLeft}d", PlantGold, Color(0xFFFFF9E6))
-            else -> DueInfo("${daysLeft}d", PlantLeaf, PlantMint)
+            daysLeft <= 3 -> DueInfo("$daysLeft d", PlantGold, Color(0xFFFFF9E6))
+            else -> DueInfo("$daysLeft d", PlantLeaf, PlantMint)
         }
     } catch (e: Exception) {
-        DueInfo("-", PlantMuted, PlantMint)
+        DueInfo("—", PlantMuted, PlantMint)
     }
 }
 
@@ -703,11 +878,4 @@ private fun formatFullDate(value: String?): String {
     } catch (e: Exception) {
         value.substringBefore("T")
     }
-}
-
-private fun plantStatusContainerColor(healthStatus: Int?): Color = when (healthStatus) {
-    0 -> Color(0xFFDFF2DE)
-    1 -> Color(0xFFFFF2B8)
-    2 -> Color(0xFFFFE2DE)
-    else -> PlantMint
 }
