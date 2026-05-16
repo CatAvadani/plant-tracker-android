@@ -249,72 +249,64 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 }
             )
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(12.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    AddPlantField(
-                        value = name,
-                        onValueChange = {
-                            name = it
-                            nameError = it.isBlank()
-                        },
-                        label = "Plant name",
-                        icon = Icons.Default.LocalFlorist,
-                        isError = nameError,
-                        supportingText = if (nameError) "Name is required" else null
-                    )
+            SectionTitle("Basic Info")
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AddPlantField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        nameError = it.isBlank()
+                    },
+                    label = "Plant name",
+                    icon = Icons.Default.LocalFlorist,
+                    isError = nameError,
+                    supportingText = if (nameError) "Name is required" else null
+                )
 
-                    AddPlantField(
-                        value = species,
-                        onValueChange = { species = it },
-                        label = "Species",
-                        icon = Icons.Default.Eco
-                    )
+                AddPlantField(
+                    value = species,
+                    onValueChange = { species = it },
+                    label = "Species",
+                    icon = Icons.Default.Eco
+                )
 
-                    AddPlantField(
-                        value = location,
-                        onValueChange = { location = it },
-                        label = "Location",
-                        icon = Icons.Default.Place
-                    )
-
-                    AddPlantField(
-                        value = frequency,
-                        onValueChange = {
-                            frequency = it.filter(Char::isDigit)
-                            frequencyError = wateringFrequencyError(frequency)
-                        },
-                        label = "Watering frequency",
-                        icon = Icons.Default.EventRepeat,
-                        keyboardType = KeyboardType.Number,
-                        isError = frequencyError != null,
-                        supportingText = frequencyError,
-                        suffix = "days"
-                    )
-
-                    HealthStatusSelector(
-                        selected = healthStatus,
-                        onSelected = { healthStatus = it }
-                    )
-
-                    AddPlantField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        label = "Notes",
-                        icon = Icons.AutoMirrored.Filled.Notes,
-                        minLines = 3
-                    )
-                }
+                AddPlantField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = "Location",
+                    icon = Icons.Default.Place
+                )
             }
+
+            SectionTitle("Care Schedule")
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                AddPlantField(
+                    value = frequency,
+                    onValueChange = {
+                        frequency = it.filter(Char::isDigit)
+                        frequencyError = wateringFrequencyError(frequency)
+                    },
+                    label = "Watering frequency",
+                    icon = Icons.Default.EventRepeat,
+                    keyboardType = KeyboardType.Number,
+                    isError = frequencyError != null,
+                    supportingText = frequencyError,
+                    suffix = "days"
+                )
+
+                HealthStatusSelector(
+                    selected = healthStatus,
+                    onSelected = { healthStatus = it }
+                )
+            }
+
+            SectionTitle("Notes")
+            AddPlantField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = "Notes",
+                minLines = 3
+            )
 
             if (uiState is PlantUiState.Error) {
                 ScreenStateCard(
@@ -358,9 +350,9 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 enabled = !isSaving && !isLoading && name.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PlantLeaf,
-                    disabledContainerColor = Color(0xFFB7CDB1),
+                    disabledContainerColor = PlantMint,
                     contentColor = Color.White,
-                    disabledContentColor = Color.White.copy(alpha = 0.78f)
+                    disabledContentColor = PlantMuted
                 ),
                 shape = RoundedCornerShape(18.dp)
             ) {
@@ -394,7 +386,7 @@ private fun AddPlantHero(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f))
+            .shadow(10.dp, RoundedCornerShape(28.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f))
             .clickable { onPickImage() },
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -491,7 +483,7 @@ private fun PlantAnalysisHelperCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(10.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.10f)),
+            .shadow(6.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.10f)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -723,11 +715,23 @@ private fun AnalysisSuggestionSection(
 }
 
 @Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium.copy(
+            color = PlantDeepLeaf,
+            fontWeight = FontWeight.Bold
+        ),
+        modifier = Modifier.padding(top = 4.dp)
+    )
+}
+
+@Composable
 private fun AddPlantField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     isError: Boolean = false,
@@ -739,12 +743,14 @@ private fun AddPlantField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isError) MaterialTheme.colorScheme.error else PlantMuted
-            )
+        leadingIcon = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = if (isError) MaterialTheme.colorScheme.error else PlantMuted
+                )
+            }
         },
         trailingIcon = {
             suffix?.let {
@@ -767,7 +773,7 @@ private fun AddPlantField(
             }
         },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = PlantLeaf,
             unfocusedBorderColor = PlantLine,
