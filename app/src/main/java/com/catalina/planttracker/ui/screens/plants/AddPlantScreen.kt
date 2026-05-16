@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +44,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -73,10 +74,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -216,7 +219,6 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            SectionTitle("Plant Photo")
             PlantPhotoCard(
                 selectedImageUri = selectedImageUri,
                 onPickImage = { showImageSourceDialog = true },
@@ -266,7 +268,7 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 )
             }
 
-            SectionTitle("Basic Info")
+            SectionTitle("Plant Info")
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AddPlantField(
                     value = name,
@@ -318,11 +320,9 @@ fun AddPlantScreen(onBack: () -> Unit) {
             }
 
             SectionTitle("Notes")
-            AddPlantField(
+            NotesInputCard(
                 value = notes,
-                onValueChange = { notes = it },
-                label = "Notes",
-                minLines = 3
+                onValueChange = { notes = it }
             )
 
             if (uiState is PlantUiState.Error) {
@@ -574,7 +574,7 @@ private fun PlantAnalysisHelperContent(
                         onClick = onCancelAnalysis,
                         modifier = Modifier.align(Alignment.End)
                     ) {
-                        Text("Cancel")
+                        Text("Cancel", color = PlantMuted)
                     }
                 }
                 is PlantAnalysisUiState.Error -> {
@@ -615,54 +615,109 @@ private fun ImageSourceDialog(
     onGallery: () -> Unit,
     onCamera: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "Add photo",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = PlantInk
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Add photo",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = PlantInk
+                    )
                 )
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(
-                    onClick = onGallery,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(
-                        Icons.Default.PhotoLibrary,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choose from gallery")
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = onGallery,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PlantLeaf)
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Choose from gallery", fontWeight = FontWeight.SemiBold)
+                    }
+                    OutlinedButton(
+                        onClick = onCamera,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        border = BorderStroke(1.dp, PlantLeaf.copy(alpha = 0.4f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantDeepLeaf)
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Take photo", fontWeight = FontWeight.SemiBold)
+                    }
                 }
-                OutlinedButton(
-                    onClick = onCamera,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End)
                 ) {
-                    Icon(
-                        Icons.Default.CameraAlt,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Take photo")
+                    Text("Cancel", color = PlantMuted)
                 }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
             }
         }
-    )
+    }
+}
+
+@Composable
+private fun NotesInputCard(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String = "Notes"
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = PlantInk,
+                    lineHeight = 22.sp
+                ),
+                decorationBox = { innerTextField ->
+                    if (value.isBlank()) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted)
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+        }
+    }
 }
 
 @Composable
@@ -942,6 +997,6 @@ private fun wateringFrequencyError(value: String): String? {
 
 private fun MutableList<String>.addSuggestionText(title: String, suggestions: List<String>) {
     if (suggestions.isNotEmpty()) {
-        add("$title:\n${suggestions.joinToString(separator = "\n") { "- $it" }}")
+        add("$title:\n${suggestions.joinToString(separator = "\n") { "• $it" }}")
     }
 }

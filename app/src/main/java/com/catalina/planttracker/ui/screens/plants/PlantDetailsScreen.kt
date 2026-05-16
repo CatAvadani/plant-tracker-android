@@ -780,48 +780,30 @@ private fun NotesCard(notes: String?) {
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(18.dp),
-            verticalAlignment = Alignment.Top
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(PlantMint, RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Notes,
-                    contentDescription = null,
-                    tint = PlantLeaf,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
             if (hasNotes) {
                 Text(
                     text = notes,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         color = PlantInk.copy(alpha = 0.85f),
                         lineHeight = 22.sp
-                    ),
-                    modifier = Modifier.weight(1f)
+                    )
                 )
             } else {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "No notes yet",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            color = PlantMuted,
-                            fontWeight = FontWeight.Medium
-                        )
+                Text(
+                    text = "No notes yet",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = PlantMuted,
+                        fontWeight = FontWeight.Medium
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Tap Edit to add care observations.",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted.copy(alpha = 0.7f))
-                    )
-                }
+                )
+                Text(
+                    text = "Tap Edit to add care observations.",
+                    style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted.copy(alpha = 0.7f))
+                )
             }
         }
     }

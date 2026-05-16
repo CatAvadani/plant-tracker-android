@@ -1,8 +1,10 @@
 package com.catalina.planttracker.ui.screens.plants
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,15 +21,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.LocalFlorist
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.WarningAmber
@@ -40,11 +44,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -66,6 +72,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -125,11 +133,20 @@ fun EditPlantScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var existingImageUrl by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
 
     val pickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let {
+            selectedImageUri = it.saveEditImage(context)
+        }
     }
 
     LaunchedEffect(id) {
@@ -236,69 +253,73 @@ fun EditPlantScreen(
                 EditPlantHero(
                     selectedImageUri = selectedImageUri,
                     existingImageUrl = existingImageUrl,
-                    onPickImage = { pickerLauncher.launch("image/*") }
+                    onPickImage = { showImageSourceDialog = true }
                 )
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(12.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
-                    shape = RoundedCornerShape(32.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        EditPlantField(
-                            value = name,
-                            onValueChange = {
-                                name = it
-                                nameError = it.isBlank()
-                            },
-                            label = "Plant name",
-                            icon = Icons.Default.LocalFlorist,
-                            isError = nameError,
-                            supportingText = if (nameError) "Name is required" else null
-                        )
+                SectionTitle("Plant Info")
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    EditPlantField(
+                        value = name,
+                        onValueChange = {
+                            name = it
+                            nameError = it.isBlank()
+                        },
+                        label = "Plant name",
+                        icon = Icons.Default.LocalFlorist,
+                        isError = nameError,
+                        supportingText = if (nameError) "Name is required" else null
+                    )
 
-                        EditPlantField(
-                            value = species,
-                            onValueChange = { species = it },
-                            label = "Species",
-                            icon = Icons.Default.Eco
-                        )
+                    EditPlantField(
+                        value = species,
+                        onValueChange = { species = it },
+                        label = "Species",
+                        icon = Icons.Default.Eco
+                    )
 
-                        EditPlantField(
-                            value = location,
-                            onValueChange = { location = it },
-                            label = "Location",
-                            icon = Icons.Default.Place
-                        )
+                    EditPlantField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = "Location",
+                        icon = Icons.Default.Place
+                    )
+                }
 
-                        EditPlantField(
-                            value = frequency,
-                            onValueChange = { frequency = it.filter(Char::isDigit) },
-                            label = "Watering frequency",
-                            icon = Icons.Default.EventRepeat,
-                            keyboardType = KeyboardType.Number,
-                            suffix = "days"
-                        )
+                SectionTitle("Care Schedule")
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    EditPlantField(
+                        value = frequency,
+                        onValueChange = { frequency = it.filter(Char::isDigit) },
+                        label = "Watering frequency",
+                        icon = Icons.Default.EventRepeat,
+                        keyboardType = KeyboardType.Number,
+                        suffix = "days"
+                    )
 
-                        HealthStatusSelector(
-                            selected = healthStatus,
-                            onSelected = { healthStatus = it }
-                        )
+                    HealthStatusSelector(
+                        selected = healthStatus,
+                        onSelected = { healthStatus = it }
+                    )
+                }
 
-                        EditPlantField(
-                            value = notes,
-                            onValueChange = { notes = it },
-                            label = "Notes",
-                            icon = Icons.AutoMirrored.Filled.Notes,
-                            minLines = 3
-                        )
-                    }
+                SectionTitle("Notes")
+                NotesInputCard(
+                    value = notes,
+                    onValueChange = { notes = it }
+                )
+
+                if (showImageSourceDialog) {
+                    ImageSourceDialog(
+                        onDismiss = { showImageSourceDialog = false },
+                        onGallery = {
+                            showImageSourceDialog = false
+                            pickerLauncher.launch("image/*")
+                        },
+                        onCamera = {
+                            showImageSourceDialog = false
+                            cameraLauncher.launch(null)
+                        }
+                    )
                 }
 
                 if (uiState is PlantUiState.Error) {
@@ -341,9 +362,9 @@ fun EditPlantScreen(
                     enabled = !isSaving && !isLoading && name.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PlantLeaf,
-                        disabledContainerColor = Color(0xFFB7CDB1),
+                        disabledContainerColor = PlantMint,
                         contentColor = Color.White,
-                        disabledContentColor = Color.White.copy(alpha = 0.78f)
+                        disabledContentColor = PlantMuted
                     ),
                     shape = RoundedCornerShape(18.dp)
                 ) {
@@ -379,31 +400,30 @@ private fun EditPlantHero(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(14.dp, RoundedCornerShape(32.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f))
-            .clickable { onPickImage() },
-        shape = RoundedCornerShape(32.dp),
+            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(184.dp)
+                .height(140.dp)
                 .background(
                     Brush.horizontalGradient(
                         listOf(Color.White, PlantCream, Color(0xFFDDEFD6))
                     )
-                ),
+                )
+                .clickable { onPickImage() },
             contentAlignment = Alignment.Center
         ) {
             if (selectedImageUri != null || existingImageUrl != null) {
                 AsyncImage(
                     model = selectedImageUri ?: existingImageUrl,
                     contentDescription = "Plant image",
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(32.dp)),
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
                     contentScale = ContentScale.Crop
                 )
-                // Overlay for picking again
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -413,14 +433,14 @@ private fun EditPlantHero(
                     Box(
                         modifier = Modifier
                             .padding(12.dp)
-                            .size(40.dp)
-                            .background(Color.White.copy(alpha = 0.8f), CircleShape),
+                            .size(36.dp)
+                            .background(Color.White.copy(alpha = 0.85f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Default.AddAPhoto,
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(18.dp),
                             tint = PlantLeaf
                         )
                     }
@@ -428,25 +448,25 @@ private fun EditPlantHero(
             } else {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(56.dp)
                             .background(PlantMint, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.AddAPhoto,
                             contentDescription = null,
-                            modifier = Modifier.size(34.dp),
+                            modifier = Modifier.size(28.dp),
                             tint = PlantLeaf
                         )
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "Change photo",
-                            style = MaterialTheme.typography.titleMedium.copy(
+                            style = MaterialTheme.typography.titleSmall.copy(
                                 color = PlantLeaf,
                                 fontWeight = FontWeight.Bold
                             )
@@ -519,6 +539,137 @@ private fun EditPlantField(
             errorContainerColor = PlantCream
         )
     )
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium.copy(
+            color = PlantDeepLeaf,
+            fontWeight = FontWeight.Bold
+        ),
+        modifier = Modifier.padding(top = 4.dp)
+    )
+}
+
+@Composable
+private fun ImageSourceDialog(
+    onDismiss: () -> Unit,
+    onGallery: () -> Unit,
+    onCamera: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Add photo",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = PlantInk
+                    )
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = onGallery,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PlantLeaf)
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Choose from gallery", fontWeight = FontWeight.SemiBold)
+                    }
+                    OutlinedButton(
+                        onClick = onCamera,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        border = BorderStroke(1.dp, PlantLeaf.copy(alpha = 0.4f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PlantDeepLeaf)
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Take photo", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Cancel", color = PlantMuted)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotesInputCard(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String = "Notes"
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(20.dp), ambientColor = PlantLeaf.copy(alpha = 0.08f)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = PlantInk,
+                    lineHeight = 22.sp
+                ),
+                decorationBox = { innerTextField ->
+                    if (value.isBlank()) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyLarge.copy(color = PlantMuted)
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+        }
+    }
+}
+
+private fun Bitmap.saveEditImage(context: android.content.Context): Uri {
+    val file = java.io.File(context.cacheDir, "edit_plant_${System.currentTimeMillis()}.jpg")
+    file.outputStream().use { output ->
+        compress(Bitmap.CompressFormat.JPEG, 92, output)
+    }
+    return Uri.fromFile(file)
 }
 
 @Composable
