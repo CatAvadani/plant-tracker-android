@@ -43,6 +43,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -132,6 +133,7 @@ fun AddPlantScreen(onBack: () -> Unit) {
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isSaving by remember { mutableStateOf(false) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
 
     val pickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -217,13 +219,11 @@ fun AddPlantScreen(onBack: () -> Unit) {
             SectionTitle("Plant Photo")
             PlantPhotoCard(
                 selectedImageUri = selectedImageUri,
-                onPickImage = { pickerLauncher.launch("image/*") },
+                onPickImage = { showImageSourceDialog = true },
                 analysisContent = {
                     PlantAnalysisHelperContent(
                         selectedImageUri = selectedImageUri,
                         analysisState = analysisState,
-                        onPickImage = { pickerLauncher.launch("image/*") },
-                        onCaptureImage = { cameraLauncher.launch(null) },
                         onAnalyzeImage = {
                             selectedImageUri?.let { uri ->
                                 analysisViewModel.analyzeImage(uri, context)
@@ -251,6 +251,20 @@ fun AddPlantScreen(onBack: () -> Unit) {
                     )
                 }
             )
+
+            if (showImageSourceDialog) {
+                ImageSourceDialog(
+                    onDismiss = { showImageSourceDialog = false },
+                    onGallery = {
+                        showImageSourceDialog = false
+                        pickerLauncher.launch("image/*")
+                    },
+                    onCamera = {
+                        showImageSourceDialog = false
+                        cameraLauncher.launch(null)
+                    }
+                )
+            }
 
             SectionTitle("Basic Info")
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -481,8 +495,6 @@ private fun PlantPhotoCard(
 private fun PlantAnalysisHelperContent(
     selectedImageUri: Uri?,
     analysisState: PlantAnalysisUiState,
-    onPickImage: () -> Unit,
-    onCaptureImage: () -> Unit,
     onAnalyzeImage: () -> Unit,
     onCancelAnalysis: () -> Unit,
     onRetryAnalysis: () -> Unit,
@@ -511,48 +523,16 @@ private fun PlantAnalysisHelperContent(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "AI plant helper",
+                        text = "AI Plant Scan",
                         style = MaterialTheme.typography.titleMedium.copy(
                             color = PlantInk,
                             fontWeight = FontWeight.Bold
                         )
                     )
                     Text(
-                        text = "Analyze a photo, then review and apply suggestions.",
+                        text = "Identify your plant and auto-fill care details.",
                         style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
                     )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onPickImage,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PhotoLibrary,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choose")
-                }
-                OutlinedButton(
-                    onClick = onCaptureImage,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Camera")
                 }
             }
 
@@ -628,6 +608,62 @@ private fun PlantAnalysisHelperContent(
             }
         }
     }
+
+@Composable
+private fun ImageSourceDialog(
+    onDismiss: () -> Unit,
+    onGallery: () -> Unit,
+    onCamera: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Add photo",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = PlantInk
+                )
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(
+                    onClick = onGallery,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.PhotoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Choose from gallery")
+                }
+                OutlinedButton(
+                    onClick = onCamera,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CameraAlt,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Take photo")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
 
 @Composable
 private fun PlantAnalysisResultCard(
