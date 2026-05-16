@@ -44,6 +44,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -213,39 +214,41 @@ fun AddPlantScreen(onBack: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            AddPlantHero(
+            SectionTitle("Plant Photo")
+            PlantPhotoCard(
                 selectedImageUri = selectedImageUri,
-                onPickImage = { pickerLauncher.launch("image/*") }
-            )
-
-            PlantAnalysisHelperCard(
-                selectedImageUri = selectedImageUri,
-                analysisState = analysisState,
                 onPickImage = { pickerLauncher.launch("image/*") },
-                onCaptureImage = { cameraLauncher.launch(null) },
-                onAnalyzeImage = {
-                    selectedImageUri?.let { uri ->
-                        analysisViewModel.analyzeImage(uri, context)
-                    }
-                },
-                onCancelAnalysis = analysisViewModel::cancelAnalysis,
-                onRetryAnalysis = {
-                    selectedImageUri?.let { uri ->
-                        analysisViewModel.analyzeImage(uri, context)
-                    }
-                },
-                onApply = { result ->
-                    name = result.plantName
-                    if (species.isBlank()) {
-                        species = result.plantName
-                    }
-                    if (frequency.isBlank()) {
-                        frequency = result.wateringFrequencyDays.toString()
-                        frequencyError = null
-                    }
-                    healthStatus = result.healthStatus.toPlantHealthStatus()
-                    notes = result.toPlantNotes()
-                    nameError = false
+                analysisContent = {
+                    PlantAnalysisHelperContent(
+                        selectedImageUri = selectedImageUri,
+                        analysisState = analysisState,
+                        onPickImage = { pickerLauncher.launch("image/*") },
+                        onCaptureImage = { cameraLauncher.launch(null) },
+                        onAnalyzeImage = {
+                            selectedImageUri?.let { uri ->
+                                analysisViewModel.analyzeImage(uri, context)
+                            }
+                        },
+                        onCancelAnalysis = analysisViewModel::cancelAnalysis,
+                        onRetryAnalysis = {
+                            selectedImageUri?.let { uri ->
+                                analysisViewModel.analyzeImage(uri, context)
+                            }
+                        },
+                        onApply = { result ->
+                            name = result.plantName
+                            if (species.isBlank()) {
+                                species = result.plantName
+                            }
+                            if (frequency.isBlank()) {
+                                frequency = result.wateringFrequencyDays.toString()
+                                frequencyError = null
+                            }
+                            healthStatus = result.healthStatus.toPlantHealthStatus()
+                            notes = result.toPlantNotes()
+                            nameError = false
+                        }
+                    )
                 }
             )
 
@@ -379,98 +382,103 @@ fun AddPlantScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun AddPlantHero(
+private fun PlantPhotoCard(
     selectedImageUri: Uri?,
-    onPickImage: () -> Unit
+    onPickImage: () -> Unit,
+    analysisContent: @Composable () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(10.dp, RoundedCornerShape(28.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f))
-            .clickable { onPickImage() },
-        shape = RoundedCornerShape(32.dp),
+            .shadow(8.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.12f)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(184.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(Color.White, PlantCream, Color(0xFFDDEFD6))
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color.White, PlantCream, Color(0xFFDDEFD6))
+                        )
                     )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            if (selectedImageUri != null) {
-                AsyncImage(
-                    model = selectedImageUri,
-                    contentDescription = "Selected plant image",
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(32.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                // Overlay for picking again
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.BottomEnd
-                ) {
+                    .clickable { onPickImage() },
+                contentAlignment = Alignment.Center
+            ) {
+                if (selectedImageUri != null) {
+                    AsyncImage(
+                        model = selectedImageUri,
+                        contentDescription = "Selected plant image",
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+                        contentScale = ContentScale.Crop
+                    )
                     Box(
                         modifier = Modifier
-                            .padding(12.dp)
-                            .size(40.dp)
-                            .background(Color.White.copy(alpha = 0.8f), CircleShape),
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.BottomEnd
                     ) {
-                        Icon(
-                            Icons.Default.AddAPhoto,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = PlantLeaf
-                        )
-                    }
-                }
-            } else {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .background(PlantMint, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AddAPhoto,
-                            contentDescription = null,
-                            modifier = Modifier.size(34.dp),
-                            tint = PlantLeaf
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Add photo",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = PlantLeaf,
-                                fontWeight = FontWeight.Bold
+                        Box(
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .size(36.dp)
+                                .background(Color.White.copy(alpha = 0.85f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.AddAPhoto,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = PlantLeaf
                             )
-                        )
-                        Text(
-                            text = "Tap to select an image",
-                            style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
-                        )
+                        }
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(PlantMint, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddAPhoto,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = PlantLeaf
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Add photo",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    color = PlantLeaf,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Text(
+                                text = "Tap to select an image",
+                                style = MaterialTheme.typography.bodySmall.copy(color = PlantMuted)
+                            )
+                        }
                     }
                 }
             }
+
+            HorizontalDivider(color = PlantLine)
+            analysisContent()
         }
     }
 }
 
 @Composable
-private fun PlantAnalysisHelperCard(
+private fun PlantAnalysisHelperContent(
     selectedImageUri: Uri?,
     analysisState: PlantAnalysisUiState,
     onPickImage: () -> Unit,
@@ -480,18 +488,10 @@ private fun PlantAnalysisHelperCard(
     onRetryAnalysis: () -> Unit,
     onApply: (PlantAnalysisResponse) -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(24.dp), ambientColor = PlantLeaf.copy(alpha = 0.10f)),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    Column(
+        modifier = Modifier.padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -628,7 +628,6 @@ private fun PlantAnalysisHelperCard(
             }
         }
     }
-}
 
 @Composable
 private fun PlantAnalysisResultCard(
