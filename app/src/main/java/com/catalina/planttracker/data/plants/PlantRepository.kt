@@ -159,19 +159,13 @@ class PlantRepository {
                 mediaType = mediaType,
                 contentLength = contentLength
             )
-            val partNames = listOf("image", "imageFile", "file")
-
-            var lastError = "Failed to upload image"
-            for (partName in partNames) {
-                val body = MultipartBody.Part.createFormData(partName, fileName, requestFile)
-                val response = api.uploadImage(body)
-                if (response.isSuccessful && response.body() != null) {
-                    return Result.success(response.body()!!.imageUrl)
-                }
-                lastError = responseMessage(response, "Failed to upload image")
+            val body = MultipartBody.Part.createFormData("file", fileName, requestFile)
+            val response = api.uploadImage(body)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.imageUrl)
+            } else {
+                Result.failure(Exception(responseMessage(response, "Failed to upload image")))
             }
-
-            Result.failure(Exception(lastError))
         } catch (e: Exception) {
             Result.failure(e)
         }

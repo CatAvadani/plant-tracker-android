@@ -240,7 +240,7 @@ fun AddPlantScreen(onBack: () -> Unit) {
                         species = result.plantName
                     }
                     if (frequency.isBlank()) {
-                        frequency = result.recommendedWateringFrequencyDays().toString()
+                        frequency = result.wateringFrequencyDays.toString()
                         frequencyError = null
                     }
                     healthStatus = result.healthStatus.toPlantHealthStatus()
@@ -896,40 +896,6 @@ private fun wateringFrequencyError(value: String): String? {
         value.isBlank() -> "Watering frequency is required"
         days == null || days !in 1..365 -> "Watering frequency must be between 1 and 365 days"
         else -> null
-    }
-}
-
-private fun PlantAnalysisResponse.recommendedWateringFrequencyDays(): Int {
-    wateringFrequencyDays?.takeIf { it in 1..365 }?.let { return it }
-
-    val text = wateringSuggestions.joinToString(separator = " ").lowercase()
-    return when {
-        text.contains("none") ||
-            text.contains("not needed") ||
-            text.contains("unnecessary") ||
-            text.contains("artificial") -> 30
-        text.contains("daily") ||
-            text.contains("every day") -> 1
-        text.contains("twice a week") ||
-            text.contains("2 times a week") -> 3
-        text.contains("weekly") ||
-            text.contains("once a week") ||
-            text.contains("every week") -> 7
-        text.contains("biweekly") ||
-            text.contains("every two weeks") ||
-            text.contains("every 2 weeks") -> 14
-        text.contains("monthly") ||
-            text.contains("once a month") -> 30
-        text.contains("soil to dry") ||
-            text.contains("top 2-3 cm") ||
-            text.contains("top inch") -> 7
-        text.contains("moderately") ||
-            text.contains("growing season") -> 7
-        text.contains("sparingly") ||
-            text.contains("drought") ||
-            text.contains("succulent") ||
-            text.contains("cactus") -> 14
-        else -> 7
     }
 }
 

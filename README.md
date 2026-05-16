@@ -16,7 +16,7 @@ The app is fully integrated with a .NET Web API for secure data persistence and 
 - **Watering Calendar**: A visual schedule for upcoming watering tasks.
 - **Watering Reminders**: Local notifications powered by `AlarmManager` to remind users when plants need water. Reminders are automatically restored after device reboot.
 - **Notification Preferences**: Toggle reminders on or off.
-- **Secure Storage**: Sensitive information like JWT tokens and API keys are stored using `EncryptedSharedPreferences`.
+- **Secure Storage**: JWT tokens and user session details are stored using `EncryptedSharedPreferences`.
 - **Responsive UI**: Built entirely with Jetpack Compose for a smooth and modern user experience.
 
 ## Tech Stack

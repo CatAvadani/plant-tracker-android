@@ -23,7 +23,6 @@ class TokenManager(context: Context) {
 
     companion object {
         private const val KEY_JWT_TOKEN = "jwt_token"
-        private const val KEY_API_KEY = "api_key"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_NAME = "user_display_name"
 
@@ -40,15 +39,6 @@ class TokenManager(context: Context) {
     }
 
     fun getToken(): String? = sharedPreferences.getString(KEY_JWT_TOKEN, null)
-
-    fun saveApiKey(apiKey: String) {
-        sharedPreferences.edit().putString(KEY_API_KEY, apiKey).apply()
-    }
-
-    fun getApiKey(): String? {
-        val key = sharedPreferences.getString(KEY_API_KEY, null)
-        return if (key.isNullOrEmpty()) null else key
-    }
 
     fun saveUser(email: String, name: String) {
         sharedPreferences.edit().apply {

@@ -68,7 +68,7 @@ app/src/main/java/com/catalina/planttracker/
 ├── data/
 │   ├── auth/AuthRepository.kt
 │   ├── carelogs/CareLogRepository.kt
-│   ├── local/TokenManager.kt    # EncryptedSharedPreferences wrapper (JWT, API key, user info)
+│   ├── local/TokenManager.kt    # EncryptedSharedPreferences wrapper (JWT, user info)
 │   ├── model/                   # DTOs: AuthModels, CareLogModels, PlantModels
 │   ├── network/                 # ApiConfig, RetrofitInstance, AuthInterceptor, API services
 │   ├── notifications/NotificationPreferenceManager.kt
@@ -130,8 +130,8 @@ Follow these conventions to stay consistent with the existing codebase:
 - **MVVM**: Each screen has a corresponding ViewModel. ViewModels hold UI state and business logic.
 - **Repository pattern**: Data operations go through repositories (`AuthRepository`, `PlantRepository`, `CareLogRepository`). Repositories call API services and may cache results in memory.
 - **Singleton Retrofit**: `RetrofitInstance` is a singleton initialized explicitly in `MainActivity.onCreate()`. API services are exposed as lazy properties.
-- **Auth Interceptor**: `AuthInterceptor` attaches `Authorization: Bearer <JWT>` and `X-Api-Key` headers to all non-auth requests. On `401`, it clears the session and emits a `sessionExpired` event that triggers navigation to Login.
-- **Token Manager**: `TokenManager` uses `EncryptedSharedPreferences` (AES256_GCM) to store the JWT token, API key, user email, and display name.
+- **Auth Interceptor**: `AuthInterceptor` attaches `Authorization: Bearer <JWT>` to all non-auth requests. On `401`, it clears the session and emits a `sessionExpired` event that triggers navigation to Login.
+- **Token Manager**: `TokenManager` uses `EncryptedSharedPreferences` (AES256_GCM) to store the JWT token, user email, and display name.
 - **In-memory caching**: `PlantRepository` caches the plant list (`cachedPlants`) so tab switches do not trigger full reloads.
 - **Notifications**: `WateringReminderScheduler` uses `AlarmManager.setAndAllowWhileIdle()` to schedule per-plant watering reminders. Reminders are persisted in plain `SharedPreferences` as JSON and restored on boot via `BootCompletedReceiver`. The scheduler is gated by `NotificationPreferenceManager`.
 
@@ -162,8 +162,8 @@ The project currently has **only example/template tests**. When adding tests, us
 
 ## Security Considerations
 
-1. **Encrypted storage**: JWT tokens and API keys are stored in `EncryptedSharedPreferences` via `TokenManager`. Never store credentials in plain `SharedPreferences`.
-2. **API key header**: The backend expects an `X-Api-Key` header alongside the JWT for authenticated endpoints.
+1. **Encrypted storage**: JWT tokens are stored in `EncryptedSharedPreferences` via `TokenManager`. Never store credentials in plain `SharedPreferences`.
+2. **Bearer auth**: The backend expects `Authorization: Bearer <JWT>` for authenticated app endpoints.
 3. **AuthInterceptor**: Automatically handles token attachment and session expiration. Do not manually add auth headers in individual API calls.
 4. **ProGuard**: Currently disabled (`isMinifyEnabled = false`). If enabled in the future, update `proguard-rules.pro` to keep Retrofit models and Compose classes.
 5. **Network logging**: `HttpLoggingInterceptor` is active at `Level.BODY`. Be cautious with production builds; consider switching to `Level.HEADERS` or removing it for release.

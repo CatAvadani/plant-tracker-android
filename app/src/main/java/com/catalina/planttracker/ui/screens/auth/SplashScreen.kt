@@ -32,7 +32,7 @@ fun SplashScreen(onNavigate: (String) -> Unit) {
 
     LaunchedEffect(Unit) {
         delay(1000)
-        if (tokenManager.getToken() != null && tokenManager.getApiKey() != null) {
+        if (tokenManager.getToken() != null) {
             onNavigate(Screen.Home.route)
         } else {
             onNavigate(Screen.Login.route)

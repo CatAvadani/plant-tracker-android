@@ -23,29 +23,13 @@ class AuthRepository(
                 val body = loginResponse.body()
                 if (body != null) {
                     tokenManager.saveToken(body.token)
-                    
+
                     // Save user info if available
                     body.user?.let { user ->
                         tokenManager.saveUser(user.email, user.displayName)
                     }
-                    
-                    // Clear existing API key before generating a new one
-                    // to ensure no old/invalid key is sent in the header
-                    tokenManager.saveApiKey("") 
 
-                    // Generate and save API Key
-                    val apiKeyResponse = api.generateApiKey()
-                    if (apiKeyResponse.isSuccessful) {
-                        val apiKeyBody = apiKeyResponse.body()
-                        if (apiKeyBody != null) {
-                            tokenManager.saveApiKey(apiKeyBody.apiKey)
-                            null // Success
-                        } else {
-                            "API Key generation failed: Empty response"
-                        }
-                    } else {
-                        responseMessage(apiKeyResponse, "API Key generation failed")
-                    }
+                    null // Success
                 } else {
                     "Login failed: Empty response"
                 }
@@ -79,7 +63,7 @@ class AuthRepository(
     }
 
     fun isLoggedIn(): Boolean {
-        return tokenManager.getToken() != null && tokenManager.getApiKey() != null
+        return tokenManager.getToken() != null
     }
 
     fun getUser(): Pair<String?, String?> {

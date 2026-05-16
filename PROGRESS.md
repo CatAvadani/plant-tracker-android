@@ -5,7 +5,7 @@ Leaf Care is a calm plant-care app built with Jetpack Compose and Material 3. Th
 
 ## Current Status
 - **Authentication**: Real login/register API calls are implemented.
-- **Session handling**: JWT token and generated API key are stored securely and checked on splash.
+- **Session handling**: JWT token and user details are stored securely and checked on splash.
 - **Main app UI**: Home, Plants, Calendar, Settings, Plant Details, Add Plant, and Edit Plant (placeholder) screens exist.
 - **Plant CRUD**: Full CRUD (Create, Read, Update, Delete) is implemented and connected to the backend API.
 - **Recent focus**: Completed a broad UI refresh for auth, main plant screens, settings, add/detail flows, launcher branding, password visibility, loading states, and plant list caching.
@@ -34,7 +34,7 @@ Leaf Care is a calm plant-care app built with Jetpack Compose and Material 3. Th
 
 ### 2. Navigation Flow
 - Implemented app startup through `SplashScreen`.
-- Splash checks for both JWT token and API key before routing to Home.
+- Splash checks for a JWT token before routing to Home.
 - Login routes to Home on successful authentication.
 - Register routes back to Login on successful account creation.
 - Settings logout clears local session data before navigating to Login.
@@ -42,15 +42,14 @@ Leaf Care is a calm plant-care app built with Jetpack Compose and Material 3. Th
 - Secondary navigation supports Plant Details, Add Plant, and Edit Plant screens.
 
 ### 3. Authentication & Session Management
-- Added `AuthApiService` for register, login, and API key generation.
+- Added `AuthApiService` for register and login.
 - Added `AuthRepository` for authentication workflows.
 - Added `AuthViewModel` with `Idle`, `Loading`, `Success`, and `Error` auth states.
 - Added `TokenManager` using encrypted shared preferences for:
   - JWT token
-  - API key
   - user email
   - display name
-- Added `AuthInterceptor` to attach JWT and API key to authenticated requests.
+- Added `AuthInterceptor` to attach JWT bearer auth to authenticated requests.
 - Login/register requests trim email input before submission.
 - Backend error responses are parsed so UI can show messages such as `Invalid email or password.` instead of only HTTP codes.
 - Logout clears encrypted preferences on `Dispatchers.IO`, then navigates after clearing completes.
@@ -88,7 +87,7 @@ Leaf Care is a calm plant-care app built with Jetpack Compose and Material 3. Th
 - Project builds successfully.
 
 ## Known Limitations
-- Current backend can return `401 Authenticated user missing` for `/api/plants`; this appears to be an auth/backend claim or API key association issue, not a UI issue.
+- Backend app endpoints now use JWT-only authentication.
 - Watering calendar still needs connection to real reminder/history data.
 - Edit Profile and Privacy Policy rows in Settings are placeholders.
 - Dark Mode toggle is UI-only and does not yet change the app theme.

@@ -1,6 +1,5 @@
 package com.catalina.planttracker.data.network
 
-import com.catalina.planttracker.data.model.ApiKeyResponse
 import com.catalina.planttracker.data.model.LoginRequest
 import com.catalina.planttracker.data.model.LoginResponse
 import com.catalina.planttracker.data.model.RegisterRequest
@@ -16,7 +15,4 @@ interface AuthApiService {
 
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
-
-    @POST("api/apikey/generate")
-    suspend fun generateApiKey(): Response<ApiKeyResponse>
 }
