@@ -273,48 +273,7 @@ private fun PlantDetailsContent(
 
         PlantHero(plant)
 
-        // Quick Stats
         val due = dueInfo(plant.lastWatered, plant.wateringFrequencyDays)
-        val (healthValue, healthAccent, healthBg) = when (plant.healthStatus) {
-            0 -> Triple("Healthy", Color.White, PlantLeaf)
-            1 -> Triple("Fair", PlantGold, Color(0xFFFFF2B8))
-            2 -> Triple("Poor", PlantRed, Color(0xFFFFE2DE))
-            else -> Triple("Unknown", PlantMuted, PlantMint)
-        }
-        val (freqValue, freqAccent, freqBg) = if (plant.wateringFrequencyDays != null) {
-            Triple("Every ${plant.wateringFrequencyDays} d", Color.White, PlantLeaf)
-        } else {
-            Triple("Not set", PlantMuted, PlantMint)
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            CompactStatCard(
-                label = "Frequency",
-                value = freqValue,
-                icon = Icons.Default.EventRepeat,
-                modifier = Modifier.weight(1f),
-                accentColor = freqAccent,
-                containerColor = freqBg
-            )
-            CompactStatCard(
-                label = "Health",
-                value = healthValue,
-                icon = Icons.Default.Eco,
-                modifier = Modifier.weight(1f),
-                accentColor = healthAccent,
-                containerColor = healthBg
-            )
-            CompactStatCard(
-                label = "Due",
-                value = due.value,
-                icon = Icons.Default.WaterDrop,
-                modifier = Modifier.weight(1f),
-                accentColor = due.tint,
-                containerColor = due.containerColor
-            )
-        }
 
         // Watering Schedule Card
         SectionTitle("Watering Schedule")
@@ -519,40 +478,13 @@ private fun PlantHero(plant: Plant) {
                 }
             }
 
-            // Floating info panel
-            Surface(
+            // Floating health chip
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        ambientColor = PlantInk.copy(alpha = 0.1f),
-                        spotColor = PlantInk.copy(alpha = 0.06f)
-                    ),
-                shape = RoundedCornerShape(20.dp),
-                color = if (!plant.imageUrl.isNullOrBlank()) {
-                    Color.White.copy(alpha = 0.96f)
-                } else {
-                    Color.White.copy(alpha = 0.97f)
-                },
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
             ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = plant.name,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = PlantInk
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    PlantStatusChip(healthStatus = plant.healthStatus)
-                }
+                PlantStatusChip(healthStatus = plant.healthStatus)
             }
         }
     }

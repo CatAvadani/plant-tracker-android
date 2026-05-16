@@ -186,10 +186,16 @@ fun PlantCard(
 @Composable
 fun PlantStatusChip(healthStatus: Int?, modifier: Modifier = Modifier) {
     val color = plantStatusColor(healthStatus)
+    val backgroundColor = when (healthStatus) {
+        0 -> PlantMint
+        1 -> Color(0xFFFFF2B8)
+        2 -> Color(0xFFFFE2DE)
+        else -> PlantMint
+    }
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(50.dp),
-        color = color.copy(alpha = 0.13f)
+        color = backgroundColor
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),

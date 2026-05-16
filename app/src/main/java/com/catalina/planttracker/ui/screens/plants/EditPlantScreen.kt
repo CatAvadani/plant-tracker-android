@@ -408,7 +408,7 @@ private fun EditPlantHero(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(140.dp)
+                .height(180.dp)
                 .background(
                     Brush.horizontalGradient(
                         listOf(Color.White, PlantCream, Color(0xFFDDEFD6))
