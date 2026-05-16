@@ -177,8 +177,8 @@ fun PlantsScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(
-                                start = 8.dp,
-                                end = 8.dp,
+                                start = 20.dp,
+                                end = 20.dp,
                                 top = 8.dp,
                                 bottom = 80.dp
                             )
@@ -194,10 +194,13 @@ fun PlantsScreen(
                             }
 
                             item(span = { GridItemSpan(maxLineSpan) }) {
-                                SectionHeader(
-                                    title = "Collection",
-                                    subtitle = "Search and filter your plants",
-                                    trailing = "${filteredPlants.size} shown"
+                                Text(
+                                    text = "${filteredPlants.size} shown",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        color = PlantMuted,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
 
@@ -381,73 +384,57 @@ private fun PlantsLibraryControls(
     onFilterChange: (PlantFilter) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Surface(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(30.dp),
-            color = Color.White
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "$totalCount plants",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = PlantDeepLeaf
-                            )
-                        )
-                        Text(
-                            text = "Keep the collection easy to scan.",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = PlantMuted)
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.Eco,
-                        contentDescription = null,
-                        tint = PlantLeaf
-                    )
-                }
+            Text(
+                text = "$totalCount plants",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = PlantDeepLeaf
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Default.Eco,
+                contentDescription = null,
+                tint = PlantLeaf
+            )
+        }
 
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Search plants") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = PlantMuted
-                        )
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(18.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PlantLeaf,
-                        unfocusedBorderColor = PlantLine,
-                        focusedLabelColor = PlantLeaf,
-                        cursorColor = PlantLeaf,
-                        focusedContainerColor = PlantCream,
-                        unfocusedContainerColor = PlantCream
-                    )
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Search plants") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = PlantMuted
                 )
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(18.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PlantLeaf,
+                unfocusedBorderColor = PlantLine,
+                focusedLabelColor = PlantLeaf,
+                cursorColor = PlantLeaf,
+                focusedContainerColor = PlantCream,
+                unfocusedContainerColor = PlantCream
+            )
+        )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PlantFilter.entries.forEach { filter ->
-                        FilterPill(
-                            label = stringResource(filter.labelRes),
-                            selected = selectedFilter == filter,
-                            onClick = { onFilterChange(filter) }
-                        )
-                    }
-                }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PlantFilter.entries.forEach { filter ->
+                FilterPill(
+                    label = stringResource(filter.labelRes),
+                    selected = selectedFilter == filter,
+                    onClick = { onFilterChange(filter) }
+                )
             }
         }
     }
@@ -462,7 +449,7 @@ private fun FilterPill(
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(50.dp),
-        color = if (selected) PlantLeaf else PlantMint
+        color = if (selected) PlantLeaf else Color.White
     ) {
         Text(
             text = label,
